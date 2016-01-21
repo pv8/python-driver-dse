@@ -54,7 +54,7 @@ for opt in _graph_options:
     setattr(GraphOptions, opt[0], property(get, set, delete, opt[1]))
 
 
-class GraphStatement(SimpleStatement):
+class SimpleGraphStatement(SimpleStatement):
 
     options = None
     """
@@ -63,7 +63,7 @@ class GraphStatement(SimpleStatement):
     """
 
     def __init__(self, *args, **kwargs):
-        super(GraphStatement, self).__init__(*args, **kwargs)
+        super(SimpleGraphStatement, self).__init__(*args, **kwargs)
         self.options = GraphOptions()
 
 
@@ -149,13 +149,13 @@ class GraphSession(object):
 
     def execute(self, query, parameters=None, timeout=_NOT_SET, trace=False, row_factory=None):
         """
-        Executes a Gremlin query string, a GraphStatement synchronously,
+        Executes a Gremlin query string, a SimpleGraphStatement synchronously,
         and returns a GraphResultSet from this execution.
         """
-        if isinstance(query, GraphStatement):
+        if isinstance(query, SimpleGraphStatement):
             options = query.options.get_options_map(self.default_graph_options)
         else:
-            query = GraphStatement(query)
+            query = SimpleGraphStatement(query)
             options = self.default_graph_options._graph_options
 
         graph_parameters = None
