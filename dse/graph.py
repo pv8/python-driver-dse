@@ -1,6 +1,5 @@
 from cassandra.query import SimpleStatement
 
-import json
 import six
 
 # (attr, description, server option)
@@ -113,69 +112,3 @@ class Result(object):
 
     def __repr__(self):
         return "%s(%r)" % (Result.__name__, json.dumps({'result': self.value}))
-
-
-_NOT_SET = object()
-
-
-class GraphSession(object):
-    """
-    A session wrapper for executing Gremlin queries against a DSE cluster
-    """
-
-    default_graph_options = None
-    """
-    Default options, initialized as follows if no additional options are provided
-    in init:
-    GraphOptions(graph_source=b'default',
-                 graph_language=b'gremlin-groovy')
-    """
-
-    default_graph_row_factory = staticmethod(graph_result_row_factory)
-
-    # Expose the session or private?
-    session = None
-
-    def __init__(self, session, default_graph_options=None):
-        """
-        :param session: Session to use for graph queries
-        :param default_graph_options: a GraphOptions object; options are merged with built-in defaults
-        """
-        self.session = session
-        self.default_graph_options = GraphOptions(graph_source=b'default',
-                                                  graph_language=b'gremlin-groovy')
-        if default_graph_options:
-            self.default_graph_options.update(default_graph_options)
-
-    def execute(self, query, parameters=None, timeout=_NOT_SET, trace=False, row_factory=None):
-        """
-        Executes a Gremlin query string, a SimpleGraphStatement synchronously,
-        and returns a GraphResultSet from this execution.
-        """
-        if isinstance(query, SimpleGraphStatement):
-            options = query.options.get_options_map(self.default_graph_options)
-        else:
-            query = SimpleGraphStatement(query)
-            options = self.default_graph_options._graph_options
-
-        graph_parameters = None
-        if parameters:
-            graph_parameters = self._transform_params(parameters)
-
-        # TODO:
-        # this is basically Session.execute_async, repeated here to customize the row factory. May want to add that
-        # parameter to the session method
-        if timeout is _NOT_SET:
-            timeout = self.session.default_timeout
-        future = self.session._create_response_future(query, parameters=None, trace=trace, custom_payload=options, timeout=timeout)
-        future.message._query_params = graph_parameters
-        future._protocol_handler = self.session.client_protocol_handler
-        future.row_factory = row_factory or self.default_graph_row_factory
-        future.send_request()
-        return future.result()
-
-    # this may go away if we change parameter encoding
-    def _transform_params(self, parameters):
-        if not isinstance(parameters, dict):
-            raise ValueError('The parameters must be a dictionary. Unnamed parameters are not allowed.')
-        return [json.dumps({'name': name, 'value': value}).encode('utf-8') for name, value in six.iteritems(parameters)]
