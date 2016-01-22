@@ -7,9 +7,8 @@ except ImportError:
 
 import os
 from os.path import expanduser
-from cassandra.cluster import Cluster
+from dse.cluster import Cluster
 from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnitTestCase
-from dse.graph import GraphSession
 
 home = expanduser('~')
 
@@ -23,24 +22,32 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
     down
     """
     @property
-    def graph_name_space(self):
+    def graph_namespace(self):
         return self._testMethodName.lower()
 
-    def graph_setup(self):
+    def session_setup(self):
         self.cluster = Cluster(protocol_version=PROTOCOL_VERSION)
         self.session = self.cluster.connect()
         self.ks_name = self._testMethodName.lower()
-        graph_name_space_param = {'graph-keyspace': self.ks_name}
-        self.graph_session = GraphSession(self.session, graph_name_space_param)
         self.cass_version, self.cql_version = get_server_versions()
 
     def setUp(self):
-        self.graph_setup()
-        self.drop_all_verticies()
+        self.session_setup()
+        self.reset_graph()
+        self.session.default_graph_options.graph_namespace = self.graph_namespace
 
     def tearDown(self):
+        self.drop_graph()
         self.cluster.shutdown()
 
-    def drop_all_verticies(self):
-        return self.graph_session.execute("g.V().drop().iterate(); g.V()")
+    def reset_graph(self):
+        self.drop_graph()
+        self.session.execute_graph('system.createGraph(name).build()', {'name': self.graph_namespace})
 
+    def drop_graph(self):
+        s = self.session
+        # might also g.V().drop().iterate(), but that leaves some schema behind
+        # this seems most robust for now
+        exists = s.execute_graph('system.graphExists(name)', {'name': self.graph_namespace})[0].value
+        if exists:
+            s.execute_graph('system.dropGraph(name)', {'name': self.graph_namespace})

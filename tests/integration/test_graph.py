@@ -26,7 +26,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             """
 
             self._generate_classic()
-            rs = self.graph_session.execute('''g.V().has('name','marko').out('knows').values('name')''')
+            rs = self.session.execute_graph('''g.V().has('name','marko').out('knows').values('name')''')
             self.assertFalse(rs.has_more_pages)
             results_list = [result.value for result in rs.current_rows]
             self.assertEqual(len(results_list), 2)
@@ -48,10 +48,10 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             @test_category dse graph
             """
             self._generate_classic()
-            rs = self.graph_session.execute('g.V()')
+            rs = self.session.execute_graph('g.V()')
             for vertex in rs:
                 self._validate_classic_vertex(vertex)
-            rs = self.graph_session.execute('g.E()')
+            rs = self.session.execute_graph('g.E()')
             for edge in rs:
                 self._validate_classic_edge(edge)
 
@@ -69,9 +69,9 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             @test_category dse graph
             """
             query_to_run = self._generate_line_graph(900)
-            self.graph_session.execute(query_to_run)
+            self.session.execute_graph(query_to_run)
             query_to_run = self._generate_line_graph(950)
-            self.assertRaises(ServerError, self.graph_session.execute, query_to_run)
+            self.assertRaises(ServerError, self.session.execute_graph, query_to_run)
 
         def test_range_query(self):
             """
@@ -88,8 +88,8 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             @test_category dse graph
             """
             query_to_run = self._generate_line_graph(900)
-            self.graph_session.execute(query_to_run)
-            rs = self.graph_session.execute("g.E().range(0,10)")
+            self.session.execute_graph(query_to_run)
+            rs = self.session.execute_graph("g.E().range(0,10)")
             self.assertFalse(rs.has_more_pages)
             self.assertEqual(len(rs.current_rows), 10)
             for result in rs:
@@ -110,7 +110,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             """
             self._generate_multi_field_graph()
 
-            rs = self.graph_session.execute("g.V()")
+            rs = self.session.execute_graph("g.V()")
             for result in rs:
                 self._validate_type(result)
 
@@ -127,7 +127,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             @test_category dse graph
             """
             self._generate_large_complex_graph(5000)
-            rs = self.graph_session.execute("g.V()")
+            rs = self.session.execute_graph("g.V()")
             for result in rs:
                 self._validate_generic_vertex_values_exist(result)
 
@@ -135,7 +135,6 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             values = vertex.properties.values()
             for value in values:
                 type_indicator = value[0].get('id').get('~type')
-                print(type_indicator)
                 if type_indicator.startswith('int'):
                     actual_value = value[0].get('value')
                     self.assertTrue(isinstance(actual_value, int))
@@ -144,7 +143,6 @@ class BasicGraphTest(BasicGraphUnitTestCase):
                     self.assertTrue(isinstance(actual_value, int))
                 elif type_indicator.startswith('long'):
                     actual_value = value[0].get('value')
-                    print(type(actual_value))
                     self.assertTrue(isinstance(actual_value, int))
                 elif type_indicator.startswith('float'):
                     actual_value = value[0].get('value')
@@ -193,7 +191,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             self.assertIn('id', value_map)
 
         def _generate_classic(self):
-            rs = self.graph_session.execute('''
+            rs = self.session.execute_graph('''
                 Vertex marko = graph.addVertex("name", "marko", "age", 29);
                 Vertex vadas = graph.addVertex("name", "vadas", "age", 27);
                 Vertex lop = graph.addVertex("name", "lop", "lang", "java");
@@ -218,7 +216,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             return final_graph_generation_statement
 
         def _generate_multi_field_graph(self):
-            rs = self.graph_session.execute('''
+            rs = self.session.execute_graph('''
                 short s1 = 5000;
                 int i1 = 1000000000;
                 Integer i2 = 100000000;
@@ -239,7 +237,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         def _generate_large_complex_graph(self, size):
             to_run = '''
-                int size = 20000;
+                int size = 2000;
                 List ids = new ArrayList();
                 Vertex v = graph.addVertex();
                 v.property("ts", 100001);
@@ -260,5 +258,4 @@ class BasicGraphTest(BasicGraphUnitTestCase):
                     ids.add(v.id());
                 }
                 g.V().count();'''
-            print to_run
-            self.graph_session.execute(to_run)
+            self.session.execute_graph(to_run)
