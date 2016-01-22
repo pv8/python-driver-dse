@@ -34,5 +34,6 @@ and the IRC channel.
 For IRC, use the #datastax-drivers channel on irc.freenode.net.  If you don't have an IRC client,
 you can use `freenode's web-based client <http://webchat.freenode.net/?channels=#datastax-drivers>`_.
 
+License
 -------
 Copyright 2016 DataStax
