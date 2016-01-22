@@ -1,5 +1,6 @@
 from cassandra.query import SimpleStatement
 
+import json
 import six
 
 # (attr, description, server option)
