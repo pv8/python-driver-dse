@@ -1,4 +1,5 @@
 import json
+import six
 
 from cassandra.cluster import Cluster, Session
 import dse.cqltypes  # unsued here, imported to cause type registration
@@ -79,4 +80,4 @@ class Session(Session):
     def _transform_params(self, parameters):
         if not isinstance(parameters, dict):
             raise ValueError('The parameters must be a dictionary. Unnamed parameters are not allowed.')
-        return [json.dumps({'name': name, 'value': value}).encode('utf-8') for name, value in six.iteritems(parameters)]
+        return [json.dumps({name: value}).encode('utf-8') for name, value in six.iteritems(parameters)]
