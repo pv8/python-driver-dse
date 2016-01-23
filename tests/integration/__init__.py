@@ -7,8 +7,8 @@ except ImportError:
 
 import os
 from os.path import expanduser
+from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnitTestCase, drop_keyspace_shutdown_cluster
 from dse.cluster import Cluster
-from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnitTestCase
 
 home = expanduser('~')
 
@@ -51,3 +51,42 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
         exists = s.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
         if exists:
             s.execute_graph('system.dropGraph(name)', {'name': self.graph_name})
+
+class BasicGeometricUnitTestCase(BasicKeyspaceUnitTestCase):
+    """
+    This base test class is used by all the geomteric tests. It contains class level teardown and setup
+    methods. It also contains the test fixtures used by those tests
+    """
+    @classmethod
+    def common_dse_setup(cls, rf, keyspace_creation=True):
+        cls.cluster = Cluster(protocol_version=PROTOCOL_VERSION)
+        cls.session = cls.cluster.connect()
+        cls.ks_name = cls.__name__.lower()
+        if keyspace_creation:
+            cls.create_keyspace(rf)
+        cls.cass_version, cls.cql_version = get_server_versions()
+        cls.session.set_keyspace(cls.ks_name)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.common_dse_setup(1)
+        cls.initalizeTables()
+
+    @classmethod
+    def tearDownClass(cls):
+        drop_keyspace_shutdown_cluster(cls.ks_name, cls.session, cls.cluster)
+
+    @classmethod
+    def initalizeTables(cls):
+        print("cql type is"+cls.cql_type_name)
+        print("keyspace name is "+cls.ks_name)
+        udt_type = "CREATE TYPE udt1 (g {0})".format(cls.cql_type_name)
+        print(udt_type)
+        print(str(cls.cluster))
+        large_table = "CREATE TABLE tbl (k uuid PRIMARY KEY, g {0}, l list<{0}>, s set<{0}>, m0 map<{0},int>, m1 map<int,{0}>, t tuple<{0},{0},{0}>, u frozen<udt1>)".format(cls.cql_type_name)
+        simple_table = "CREATE TABLE tblpk (k {0} primary key, v int)".format( cls.cql_type_name)
+        cluster_table = "CREATE TABLE tblclustering (k0 int, k1 {0}, v int, primary key (k0, k1))".format(cls.cql_type_name)
+        cls.session.execute(udt_type)
+        cls.session.execute(large_table)
+        cls.session.execute(simple_table)
+        cls.session.execute(cluster_table)
