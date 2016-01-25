@@ -58,7 +58,7 @@ class _LinearRing(object):
         return self.coords == other.coords
 
     def __str__(self):
-        return "LINEARRING(%s)" % ', '.join("%f %f" % (x, y) for x, y in self.coords)
+        return "LINEARRING(%s)" % ', '.join("%r %r" % (x, y) for x, y in self.coords)
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.coords)

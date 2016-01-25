@@ -8,7 +8,7 @@ import struct
 from cassandra.cqltypes import lookup_casstype
 from cassandra.protocol import MAX_SUPPORTED_VERSION
 from dse.cqltypes import PointType, CircleType, LineStringType, PolygonType, WKBGeometryType
-from dse.util import Point, Circle, LineString, Polygon
+from dse.util import Point, Circle, LineString, Polygon, _LinearRing
 
 wkb_be = 0
 wkb_le = 1
@@ -41,6 +41,7 @@ class GeoTypes(unittest.TestCase):
         self.assertEqual(str(Point(1., 2.)), 'POINT(1.0 2.0)')
         self.assertEqual(str(Circle(1., 2., 3.)), 'CIRCLE((1.0 2.0) 3.0)')
         self.assertEqual(str(LineString(((1., 2.), (3., 4.), (5., 6.)))), 'LINESTRING(1.0 2.0, 3.0 4.0, 5.0 6.0)')
+        self.assertEqual(str(_LinearRing(((1., 2.), (3., 4.), (5., 6.)))), 'LINEARRING(1.0 2.0, 3.0 4.0, 5.0 6.0)')
         self.assertEqual(str(Polygon([(10.1, 10.0), (110.0, 10.0), (110., 110.0), (10., 110.0), (10., 10.0)],
                                      [[(20., 20.0), (20., 30.0), (30., 30.0), (30., 20.0), (20., 20.0)],
                                       [(40., 20.0), (40., 30.0), (50., 30.0), (50., 20.0), (40., 20.0)]])),
@@ -50,6 +51,7 @@ class GeoTypes(unittest.TestCase):
         for geo in (Point(1., 2.),
                     Circle(1., 2., 3.),
                     LineString(((1., 2.), (3., 4.), (5., 6.))),
+                    _LinearRing(((1., 2.), (3., 4.), (5., 6.))),
                     Polygon([(10.1, 10.0), (110.0, 10.0), (110., 110.0), (10., 110.0), (10., 10.0)],
                             [[(20., 20.0), (20., 30.0), (30., 30.0), (30., 20.0), (20., 20.0)],
                              [(40., 20.0), (40., 30.0), (50., 30.0), (50., 20.0), (40., 20.0)]])):
