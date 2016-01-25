@@ -113,3 +113,6 @@ class Result(object):
 
     def __repr__(self):
         return "%s(%r)" % (Result.__name__, json.dumps({'result': self.value}))
+
+    def __eq__(self, other):
+        return self.value == other.value
