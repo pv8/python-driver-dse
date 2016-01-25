@@ -4,6 +4,7 @@ except ImportError:
     import unittest  # noqa
 
 import json
+import six
 
 from dse.graph import SimpleGraphStatement, GraphOptions, Result, _graph_options
 
@@ -98,7 +99,7 @@ class GraphOptionTests(unittest.TestCase):
         other = GraphOptions(graph_name='unit_test')
         options = other.get_options_map(base)
         updated = self.opt_mapping['graph_name']
-        self.assertEqual(options[updated], 'unit_test')
+        self.assertEqual(options[updated], six.b('unit_test'))
         for name in (n for n in self.opt_mapping.values() if n != updated):
             self.assertEqual(options[name], base._graph_options[name])
 
@@ -108,22 +109,22 @@ class GraphOptionTests(unittest.TestCase):
     def test_set_attr(self):
         expected = 'test@@@@'
         opts = GraphOptions(graph_name=expected)
-        self.assertEqual(opts.graph_name, expected)
+        self.assertEqual(opts.graph_name, six.b(expected))
         expected = 'somethingelse####'
         opts.graph_name = expected
-        self.assertEqual(opts.graph_name, expected)
+        self.assertEqual(opts.graph_name, six.b(expected))
 
         # will update options with set value
         another = GraphOptions()
         self.assertIsNone(another.graph_name)
         another.update(opts)
-        self.assertEqual(another.graph_name, expected)
+        self.assertEqual(another.graph_name, six.b(expected))
 
         opts.graph_name = None
         self.assertIsNone(opts.graph_name)
         # will not update another with its set-->unset value
         another.update(opts)
-        self.assertEqual(another.graph_name, expected)  # remains unset
+        self.assertEqual(another.graph_name, six.b(expected))  # remains unset
         opt_map = opts.get_options_map(another)
         self.assertIs(opt_map, another._graph_options)
 
@@ -137,5 +138,6 @@ class GraphOptionTests(unittest.TestCase):
     def _verify_api_params(self, opts, api_params):
         self.assertEqual(len(opts._graph_options), len(api_params))
         for name, value in api_params.items():
+            value = six.b(value)
             self.assertEqual(getattr(opts, name), value)
             self.assertEqual(opts._graph_options[self.opt_mapping[name]], value)
