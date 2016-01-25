@@ -5,6 +5,7 @@ from tests.integration import BasicGraphUnitTestCase
 
 
 from cassandra.protocol import ServerError
+from dse.graph import SimpleGraphStatement
 
 
 class BasicGraphTest(BasicGraphUnitTestCase):
@@ -145,6 +146,26 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             for param in (None, "string", 1234, 5.678, True, False):
                 result = s.execute_graph('x', {'x': param})[0]
                 self.assertEqual(result.value, param)
+
+        def test_statement_graph_options(self):
+            s = self.session
+            statement = SimpleGraphStatement("true")
+            statement.options.graph_name = self.graph_name
+            self.assertTrue(s.execute_graph(statement)[0].value)
+
+            # bad graph name to verify it's passed
+            statement.options.graph_name = "definitely_not_correct"
+            self.assertRaises(ServerError, s.execute_graph, statement)
+
+            # removing makes it use the correct default
+            del statement.options.graph_name
+            self.assertTrue(s.execute_graph(statement)[0].value)
+
+            # set a different binding
+            statement = SimpleGraphStatement("x.V()")
+            self.assertRaises(ServerError, s.execute_graph, statement)
+            statement.options.graph_rebinding = 'x'
+            s.execute_graph(statement)
 
         def _validate_type(self, vertex):
             values = vertex.properties.values()
