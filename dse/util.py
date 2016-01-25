@@ -9,6 +9,9 @@ class Point(object):
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
+    def __hash__(self):
+        return hash((self.x, self.y))
+
     def __str__(self):
         return "POINT(%r %r)" % (self.x, self.y)
 
@@ -26,6 +29,9 @@ class Circle(object):
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y and self.r == other.r
 
+    def __hash__(self):
+        return hash((self.x, self.y, self.r))
+
     def __str__(self):
         return "CIRCLE((%r %r) %r)" % (self.x, self.y, self.r)
 
@@ -36,10 +42,13 @@ class Circle(object):
 class LineString(object):
 
     def __init__(self, coords):
-        self.coords = list(coords)
+        self.coords = tuple(coords)
 
     def __eq__(self, other):
         return self.coords == other.coords
+
+    def __hash__(self):
+        return hash(self.coords)
 
     def __str__(self):
         return "LINESTRING(%s)" % ', '.join("%r %r" % (x, y) for x, y in self.coords)
@@ -52,10 +61,13 @@ class _LinearRing(object):
     # no validation, no implicit closing; just used for poly composition, to
     # mimic that of shapely.geometry.Polygon
     def __init__(self, coords):
-        self.coords = list(coords)
+        self.coords = tuple(coords)
 
     def __eq__(self, other):
         return self.coords == other.coords
+
+    def __hash__(self):
+        return hash(self.coords)
 
     def __str__(self):
         return "LINEARRING(%s)" % ', '.join("%r %r" % (x, y) for x, y in self.coords)
@@ -68,10 +80,13 @@ class Polygon(object):
 
     def __init__(self, exterior, interiors=None):
         self.exterior = _LinearRing(exterior)
-        self.interiors = [_LinearRing(e) for e in interiors] if interiors else []
+        self.interiors = tuple(_LinearRing(e) for e in interiors) if interiors else tuple()
 
     def __eq__(self, other):
         return self.exterior == other.exterior and self.interiors == other.interiors
+
+    def __hash__(self):
+        return hash((self.exterior, self.interiors))
 
     def __str__(self):
         rings = (ring.coords for ring in chain((self.exterior,), self.interiors))
