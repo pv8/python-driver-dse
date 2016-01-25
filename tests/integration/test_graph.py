@@ -131,6 +131,21 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             for result in rs:
                 self._validate_generic_vertex_values_exist(result)
 
+        def test_parameter_passing(self):
+            s = self.session
+            # unused parameters are passed, but ignored
+            s.execute_graph("null", {"doesn't": "matter", "what's": "passed"})
+
+            # multiple params
+            results = s.execute_graph("[a, b]", {'a': 0, 'b': 1})
+            self.assertEqual(results[0].value, 0)
+            self.assertEqual(results[1].value, 1)
+
+            # different value types
+            for param in (None, "string", 1234, 5.678, True, False):
+                result = s.execute_graph('x', {'x': param})[0]
+                self.assertEqual(result.value, param)
+
         def _validate_type(self, vertex):
             values = vertex.properties.values()
             for value in values:
