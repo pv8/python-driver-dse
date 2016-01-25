@@ -22,7 +22,7 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
     down
     """
     @property
-    def graph_namespace(self):
+    def graph_name(self):
         return self._testMethodName.lower()
 
     def session_setup(self):
@@ -34,7 +34,7 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
     def setUp(self):
         self.session_setup()
         self.reset_graph()
-        self.session.default_graph_options.graph_namespace = self.graph_namespace
+        self.session.default_graph_options.graph_name = self.graph_name
 
     def tearDown(self):
         self.drop_graph()
@@ -42,12 +42,12 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
 
     def reset_graph(self):
         self.drop_graph()
-        self.session.execute_graph('system.createGraph(name).build()', {'name': self.graph_namespace})
+        self.session.execute_graph('system.createGraph(name).build()', {'name': self.graph_name})
 
     def drop_graph(self):
         s = self.session
         # might also g.V().drop().iterate(), but that leaves some schema behind
         # this seems most robust for now
-        exists = s.execute_graph('system.graphExists(name)', {'name': self.graph_namespace})[0].value
+        exists = s.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
         if exists:
-            s.execute_graph('system.dropGraph(name)', {'name': self.graph_namespace})
+            s.execute_graph('system.dropGraph(name)', {'name': self.graph_name})

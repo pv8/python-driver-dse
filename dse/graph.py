@@ -5,7 +5,7 @@ import six
 
 # (attr, description, server option)
 _graph_options = (
-    ('graph_namespace', 'define the namespace the graph is defined with.', 'graph-keyspace'),
+    ('graph_name', 'name of the targeted graph.', 'graph-keyspace'),
     ('graph_source', 'choose the graph traversal source, configured on the server side.', 'graph-source'),
     ('graph_language', 'the language used in the queries (default "gremlin-groovy"', 'graph-language'),
     ('graph_rebinding', 'name of the graph in the query (default "g")', 'graph-rebinding')
