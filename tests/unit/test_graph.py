@@ -6,7 +6,8 @@ except ImportError:
 import json
 import six
 
-from dse.graph import SimpleGraphStatement, GraphOptions, Result, _graph_options
+from dse.graph import (SimpleGraphStatement, GraphOptions, Result,
+                       _graph_options, graph_result_row_factory, single_object_row_factory)
 
 
 class GraphResultTests(unittest.TestCase):
@@ -160,3 +161,19 @@ class GraphStatementTests(unittest.TestCase):
         # but not a bogus parameter
         kwargs['bogus'] = object()
         self.assertRaises(TypeError, SimpleGraphStatement, **kwargs)
+
+
+class GraphRowFactoryTests(unittest.TestCase):
+
+    def test_object_row_factory(self):
+        col_names = []  # unused
+        rows = [object() for _ in range(10)]
+        self.assertEqual(single_object_row_factory(col_names, ((o,) for o in rows)), rows)
+
+    def test_graph_result_row_factory(self):
+        col_names = []  # unused
+        rows = [json.dumps({'result': i}) for i in range(10)]
+        results = graph_result_row_factory(col_names, ((o,) for o in rows))
+        for i, res in enumerate(results):
+            self.assertIsInstance(res, Result)
+            self.assertEqual(res.value, i)
