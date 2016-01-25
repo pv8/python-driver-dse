@@ -141,3 +141,22 @@ class GraphOptionTests(unittest.TestCase):
             value = six.b(value)
             self.assertEqual(getattr(opts, name), value)
             self.assertEqual(opts._graph_options[self.opt_mapping[name]], value)
+
+
+class GraphStatementTests(unittest.TestCase):
+
+    def test_init(self):
+        # just make sure Statement attributes are accepted
+        kwargs = {'query_string': object(),
+                  'retry_policy': object(),
+                  'consistency_level': object(),
+                  'fetch_size': object(),
+                  'keyspace': object(),
+                  'custom_payload': object()}
+        statement = SimpleGraphStatement(**kwargs)
+        for k, v in kwargs.items():
+            self.assertIs(getattr(statement, k), v)
+
+        # but not a bogus parameter
+        kwargs['bogus'] = object()
+        self.assertRaises(TypeError, SimpleGraphStatement, **kwargs)
