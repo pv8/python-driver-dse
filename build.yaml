@@ -1,0 +1,33 @@
+python:
+  - 2.7
+  - 3.4
+os:
+  - ubuntu/trusty64
+cassandra:
+  - 3.0
+build:
+  - script: |
+      export JAVA_HOME=$CCM_JAVA_HOME
+      export PATH=$JAVA_HOME/bin:$PATH
+      # install master branch of driver.
+      pushd ./
+      cd $HOME/ccm
+      python setup.py install
+      cd $HOME
+      git clone https://github.com/datastax/python-driver.git
+      cd python-driver
+      pip install -r requirements.txt
+      python setup.py install --no-cython
+      export PYTHONPATH="${PYTHONPATH}:$HOME/python-driver/tests"
+      popd
+      # Install dependencies
+      pip install -r test-requirements.txt
+      pip install nose-ignore-docstring
+      python setup.py install
+      ECHO $PYTHONPATH
+      echo "==========RUNNING DSE TESTS INTEGRATION TESTS=========="
+      CASSANDRA_DIR=/home/jenkins/bdp-master DSE_VERSION=5.0.0 ADS_HOME=$HOME/ nosetests -s -v --logging-format="[%(levelname)s] %(asctime)s %(thread)d: %(message)s" --with-ignore-docstrings --with-xunit --xunit-file=unit_results.xml tests/unit/ || true
+      CASSANDRA_DIR=/home/jenkins/bdp-master DSE_VERSION=5.0.0 ADS_HOME=$HOME/ nosetests -s -v --logging-format="[%(levelname)s] %(asctime)s %(thread)d: %(message)s" --with-ignore-docstrings --with-xunit --xunit-file=integration_results.xml tests/integration/test_geometry.py || true
+
+  - xunit:
+    - "*_results.xml"

@@ -8,6 +8,7 @@ except ImportError:
 import os
 from os.path import expanduser
 from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnitTestCase, drop_keyspace_shutdown_cluster
+from integration import teardown_package as base_teardown
 from dse.cluster import Cluster
 
 home = expanduser('~')
@@ -15,6 +16,8 @@ home = expanduser('~')
 # Home directory of the Embedded Apache Directory Server to use
 ADS_HOME = os.getenv('ADS_HOME', home)
 
+def teardown_package():
+    base_teardown()
 
 class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
     """
@@ -79,11 +82,7 @@ class BasicGeometricUnitTestCase(BasicKeyspaceUnitTestCase):
 
     @classmethod
     def initalizeTables(cls):
-        print("cql type is"+cls.cql_type_name)
-        print("keyspace name is "+cls.ks_name)
         udt_type = "CREATE TYPE udt1 (g {0})".format(cls.cql_type_name)
-        print(udt_type)
-        print(str(cls.cluster))
         large_table = "CREATE TABLE tbl (k uuid PRIMARY KEY, g {0}, l list<{0}>, s set<{0}>, m0 map<{0},int>, m1 map<int,{0}>, t tuple<{0},{0},{0}>, u frozen<udt1>)".format(cls.cql_type_name)
         simple_table = "CREATE TABLE tblpk (k {0} primary key, v int)".format( cls.cql_type_name)
         cluster_table = "CREATE TABLE tblclustering (k0 int, k1 {0}, v int, primary key (k0, k1))".format(cls.cql_type_name)

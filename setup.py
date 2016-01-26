@@ -51,6 +51,7 @@ class DocCommand(Command):
 
 dependencies = ['cassandra-driver >= 3.1.0a1']
 
+
 setup(
     name='cassandra-driver-dse',
     version=__version__,
