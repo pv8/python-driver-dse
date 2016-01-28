@@ -132,8 +132,8 @@ class GraphOptionTests(unittest.TestCase):
     def test_del_attr(self):
         opts = GraphOptions(**self.api_params)
         test_params = self.api_params.copy()
-        del test_params['graph_rebinding']
-        del opts.graph_rebinding
+        del test_params['graph_alias']
+        del opts.graph_alias
         self._verify_api_params(opts, test_params)
 
     def _verify_api_params(self, opts, api_params):

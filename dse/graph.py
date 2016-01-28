@@ -5,12 +5,14 @@ import six
 
 # (attr, description, server option)
 _graph_options = (
-    ('graph_name', 'name of the targeted graph.', 'graph-keyspace'),
+    ('graph_name', 'name of the targeted graph.', 'graph-name'),
     ('graph_source', 'choose the graph traversal source, configured on the server side.', 'graph-source'),
     ('graph_language', 'the language used in the queries (default "gremlin-groovy"', 'graph-language'),
-    ('graph_rebinding', 'name of the graph in the query (default "g")', 'graph-rebinding')
+    ('graph_alias', 'name of the graph in the query (default "g")', 'graph-alias')
 )
-
+# ^ mapped this way from early implementations where we were translating terms that could have been confusing to users
+# Now, the options have been renamed so there is less to translate (could just be '_' -> '-'. Just leaving
+# until there is an actual reason to change.
 
 class GraphOptions(object):
 
@@ -46,10 +48,10 @@ for opt in _graph_options:
                 value = six.b(value)
             self._graph_options[key] = value
         else:
-            self._graph_options.pop(key)
+            self._graph_options.pop(key, None)
 
     def delete(self, key=opt[2]):
-        self._graph_options.pop(key)
+        self._graph_options.pop(key, None)
 
     setattr(GraphOptions, opt[0], property(get, set, delete, opt[1]))
 

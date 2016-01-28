@@ -48,6 +48,7 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
         s = self.session
         # might also g.V().drop().iterate(), but that leaves some schema behind
         # this seems most robust for now
+        self.session.default_graph_options.graph_name = None
         exists = s.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
         if exists:
             s.execute_graph('system.dropGraph(name)', {'name': self.graph_name})

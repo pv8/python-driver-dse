@@ -161,10 +161,10 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             del statement.options.graph_name
             self.assertTrue(s.execute_graph(statement)[0].value)
 
-            # set a different binding
+            # set a different alias
             statement = SimpleGraphStatement("x.V()")
             self.assertRaises(ServerError, s.execute_graph, statement)
-            statement.options.graph_rebinding = 'x'
+            statement.options.graph_alias = 'x'
             s.execute_graph(statement)
 
         def _validate_type(self, vertex):
