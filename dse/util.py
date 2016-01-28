@@ -13,7 +13,7 @@ class Point(object):
         return hash((self.x, self.y))
 
     def __str__(self):
-        return "POINT(%r %r)" % (self.x, self.y)
+        return "POINT (%r %r)" % (self.x, self.y)
 
     def __repr__(self):
         return "%s(%r, %r)" % (self.__class__.__name__, self.x, self.y)
@@ -33,7 +33,7 @@ class Circle(object):
         return hash((self.x, self.y, self.r))
 
     def __str__(self):
-        return "CIRCLE((%r %r) %r)" % (self.x, self.y, self.r)
+        return "CIRCLE ((%r %r) %r)" % (self.x, self.y, self.r)
 
     def __repr__(self):
         return "%s(%r, %r, %r)" % (self.__class__.__name__, self.x, self.y, self.r)
@@ -51,7 +51,7 @@ class LineString(object):
         return hash(self.coords)
 
     def __str__(self):
-        return "LINESTRING(%s)" % ', '.join("%r %r" % (x, y) for x, y in self.coords)
+        return "LINESTRING (%s)" % ', '.join("%r %r" % (x, y) for x, y in self.coords)
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.coords)
@@ -70,7 +70,7 @@ class _LinearRing(object):
         return hash(self.coords)
 
     def __str__(self):
-        return "LINEARRING(%s)" % ', '.join("%r %r" % (x, y) for x, y in self.coords)
+        return "LINEARRING (%s)" % ', '.join("%r %r" % (x, y) for x, y in self.coords)
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.coords)
@@ -91,7 +91,7 @@ class Polygon(object):
     def __str__(self):
         rings = (ring.coords for ring in chain((self.exterior,), self.interiors))
         rings = ("(%s)" % ', '.join("%r %r" % (x, y) for x, y in ring) for ring in rings)
-        return "POLYGON(%s)" % ', '.join(rings)
+        return "POLYGON (%s)" % ', '.join(rings)
 
     def __repr__(self):
         return "%s(%r, %r)" % (self.__class__.__name__, self.exterior.coords, [ring.coords for ring in self.interiors])
