@@ -80,4 +80,4 @@ class Session(Session):
     def _transform_params(self, parameters):
         if not isinstance(parameters, dict):
             raise ValueError('The parameters must be a dictionary. Unnamed parameters are not allowed.')
-        return [json.dumps({name: value}).encode('utf-8') for name, value in six.iteritems(parameters)]
+        return [json.dumps(parameters).encode('utf-8')]
