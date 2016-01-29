@@ -8,6 +8,10 @@ from dse.util import Point, Circle, LineString, Polygon
 
 
 class Cluster(Cluster):
+    """
+    Cluster extending cassandra.cluster.Cluster. The API is identical, except
+    that it returns a dse.cluster.Session (see below).
+    """
 
     def _new_session(self):
         session = Session(self, self.metadata.all_hosts())
@@ -29,15 +33,21 @@ class Session(Session):
 
     default_graph_options = None
     """
-    Default options, initialized as follows by default:
+    Default options for graph queries, initialized as follows by default:
     GraphOptions(graph_source=b'default',
                  graph_language=b'gremlin-groovy')
+
+    See dse.graph.GraphOptions
     """
 
     default_graph_row_factory = staticmethod(graph_result_row_factory)
-
+    """
+    Row factory used for graph results.
+    The default is dse.graph.graph_result_row_factory.
+    """
 
     def __init__(self, cluster, hosts):
+
         super(Session, self).__init__(cluster, hosts)
 
         def cql_encode_str_quoted(val):
@@ -51,8 +61,27 @@ class Session(Session):
 
     def execute_graph(self, query, parameters=None, timeout=_NOT_SET, trace=False, row_factory=None):
         """
-        Executes a Gremlin query string, a SimpleGraphStatement synchronously,
+        Executes a Gremlin query string or SimpleGraphStatement synchronously,
         and returns a GraphResultSet from this execution.
+
+
+        `parameters` is dict of named parameters to bind. The values must be
+        JSON-serializable.
+        (TBD: make this customizable)
+
+        `timeout` and `trace` have the same meaning as in Session.execute.
+
+        `row_factory` defines how the results of this query are returned. If not set,
+        it defaults to Session.default_graph_row_factory.
+
+        Example usage::
+
+            >>> session = cluster.connect()
+            >>> statement = GraphStatement('x.v()')
+            >>> statement.options.graph_binding = 'x'  # non-standard option set
+            >>> results = session.execute_graph(statement)
+            >>> for result in results:
+            ...     print(result.value)  # defaults results are dse.graph.Result
         """
         if isinstance(query, SimpleGraphStatement):
             options = query.options.get_options_map(self.default_graph_options)
@@ -76,7 +105,6 @@ class Session(Session):
         future.send_request()
         return future.result()
 
-    # this may go away if we change parameter encoding
     def _transform_params(self, parameters):
         if not isinstance(parameters, dict):
             raise ValueError('The parameters must be a dictionary. Unnamed parameters are not allowed.')

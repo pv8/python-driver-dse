@@ -15,6 +15,10 @@ _graph_options = (
 # until there is an actual reason to change.
 
 class GraphOptions(object):
+    """
+    Options for DSE Graph Query handler.
+    See _graph_options map above for notes on valid options
+    """
 
     def __init__(self, **kwargs):
         self._graph_options = {}
@@ -57,6 +61,10 @@ for opt in _graph_options:
 
 
 class SimpleGraphStatement(SimpleStatement):
+    """
+    Simple graph statement for dse.cluster.Session.execute_graph.
+    Takes the same parameters as cassandra.query.SimpleStatement
+    """
 
     options = None
     """
@@ -84,6 +92,10 @@ def graph_result_row_factory(column_names, rows):
 
 
 class Result(object):
+    """
+    Graph results when `graph_result_row_factory` is used.
+    The result json is deserialized into the value, and getters
+    """
 
     value = None
     """
