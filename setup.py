@@ -49,7 +49,7 @@ class DocCommand(Command):
         print("Documentation step '%s' performed, results here:" % mode)
         print("   file://%s/%s/index.html" % (os.path.dirname(os.path.realpath(__file__)), path))
 
-dependencies = ['cassandra-driver > 3.0.0']
+dependencies = ['cassandra-driver >= 3.1.0a1']
 
 setup(
     name='cassandra-driver-dse',
