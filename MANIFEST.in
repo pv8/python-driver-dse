@@ -1,0 +1,1 @@
+include setup.py README.rst MANIFEST.in ez_setup.py
