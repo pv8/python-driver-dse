@@ -9,8 +9,8 @@ from dse.util import Point, Circle, LineString, Polygon
 
 class Cluster(Cluster):
     """
-    Cluster extending cassandra.cluster.Cluster. The API is identical, except
-    that it returns a dse.cluster.Session (see below).
+    Cluster extending `cassandra.cluster.Cluster <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Cluster>`_.
+    The API is identical, except that it returns a :class:`dse.cluster.Session` (see below).
     """
 
     def _new_session(self):
@@ -25,7 +25,8 @@ _NOT_SET = object()
 
 class Session(Session):
     """
-    A session extension based on cassandra.cluster.Session with additional features:
+    A session extension based on `cassandra.cluster.Session <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Session>`_
+    with additional features:
 
         - Pre-registered DSE-specific types (geometric types)
         - Graph execution API
@@ -33,9 +34,10 @@ class Session(Session):
 
     default_graph_options = None
     """
-    Default options for graph queries, initialized as follows by default:
-    GraphOptions(graph_source=b'default',
-                 graph_language=b'gremlin-groovy')
+    Default options for graph queries, initialized as follows by default::
+
+        GraphOptions(graph_source=b'default',
+                     graph_language=b'gremlin-groovy')
 
     See dse.graph.GraphOptions
     """
@@ -64,7 +66,6 @@ class Session(Session):
         Executes a Gremlin query string or SimpleGraphStatement synchronously,
         and returns a GraphResultSet from this execution.
 
-
         `parameters` is dict of named parameters to bind. The values must be
         JSON-serializable.
         (TBD: make this customizable)
@@ -72,7 +73,7 @@ class Session(Session):
         `timeout` and `trace` have the same meaning as in Session.execute.
 
         `row_factory` defines how the results of this query are returned. If not set,
-        it defaults to Session.default_graph_row_factory.
+        it defaults to :attr:`Session.default_graph_row_factory`.
 
         Example usage::
 

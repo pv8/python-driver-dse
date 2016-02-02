@@ -14,6 +14,10 @@ except ImportError:
 
 
 class DSEPlainTextAuthProvider(AuthProvider):
+    """
+    Auth provider for Plain Text authentication. Works with legacy `PasswordAuthenticator`
+    or `DseAuthenticator` if `internal` scheme is enabled.
+    """
     def __init__(self, username=None, password=None):
         self.username = username
         self.password = password
@@ -23,6 +27,10 @@ class DSEPlainTextAuthProvider(AuthProvider):
 
 
 class DSEGSSAPIAuthProvider(AuthProvider):
+    """
+    Auth provider for GSS API authentication. Works with legacy `KerberosAuthenticator`
+    or `DseAuthenticator` if `kerberos` scheme is enabled.
+    """
     def __init__(self, service=None, qops=None):
         if not _have_puresasl:
             raise ImportError('The puresasl library has not been installed')
