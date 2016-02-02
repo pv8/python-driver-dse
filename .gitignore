@@ -18,11 +18,6 @@ tests/integration/ccm
 setuptools*.tar.gz
 setuptools*.egg
 
-cassandra/*.c
-!cassandra/cmurmur3.c
-cassandra/*.html
-tests/unit/cython/bytesio_testhelper.c
-
 # OSX
 .DS_Store
 
