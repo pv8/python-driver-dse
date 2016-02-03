@@ -6,7 +6,10 @@ from tests.integration import BasicGraphUnitTestCase
 
 from cassandra.protocol import ServerError
 from dse.graph import SimpleGraphStatement
+from integration import use_single_node
 
+def setup_module():
+    use_single_node()
 
 class BasicGraphTest(BasicGraphUnitTestCase):
 
@@ -133,6 +136,16 @@ class BasicGraphTest(BasicGraphUnitTestCase):
                 self._validate_generic_vertex_values_exist(result)
 
         def test_parameter_passing(self):
+            """
+            Test to validate that parameter passing works as expected
+
+            @since 1.0.0
+            @jira_ticket PYTHON-457
+            @expected_result parameters work as expected
+
+            @test_category dse graph
+            """
+
             s = self.session
             # unused parameters are passed, but ignored
             s.execute_graph("null", {"doesn't": "matter", "what's": "passed"})
@@ -146,6 +159,26 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             for param in (None, "string", 1234, 5.678, True, False):
                 result = s.execute_graph('x', {'x': param})[0]
                 self.assertEqual(result.value, param)
+
+        def test_geometric_graph_types(self):
+            """
+            Test to validate that geometric types function correctly
+
+            Creates a very simple graph, and tries to insert a simple point type
+
+            @since 1.0.0
+            @jira_ticket DSP-8087
+            @expected_result json types assoicated with insert is parsed correctly
+
+            @test_category dse graph
+            """
+            results = self.session.execute_graph('''import org.apache.cassandra.db.marshal.geometry.Point;
+                                        Schema schema = graph.schema();
+                                        schema.buildVertexLabel('PointV').add();
+                                        schema.buildPropertyKey('pointP', Point.class).add();''')
+            rs = self.session.execute_graph('''g.addV(label, 'PointV', 'pointP', 'POINT(0 1)');''')
+            #if result set is not parsed correctly this will throw an exception
+            self.assertIsNotNone(rs)
 
         def test_statement_graph_options(self):
             s = self.session
