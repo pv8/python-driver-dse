@@ -49,6 +49,20 @@ class Session(Session):
     Row factory used for graph results.
     The default is dse.graph.graph_result_row_factory.
     """
+    default_graph_timeout = 32.0
+    """
+    A default timeout for graph queries measured in seconds
+    :meth:`.execute()` or :meth:`.execute_async()`.  This default may be
+    overridden with the `timeout` parameter for either of those methods
+    or the `timeout` parameter for :meth:`.ResponseFuture.result()`.
+
+    Setting this to :const:`None` will cause no timeouts to be set by default.
+
+    Please see :meth:`.ResponseFuture.result` for details on the scope and
+    effect of this timeout.
+
+    .. versionadded:: 1.0.0
+    """
 
     def __init__(self, cluster, hosts):
 
@@ -100,7 +114,7 @@ class Session(Session):
         # this is basically Session.execute_async, repeated here to customize the row factory. May want to add that
         # parameter to the session method
         if timeout is _NOT_SET:
-            timeout = self.default_timeout
+            timeout = self.default_graph_timeout
         future = self._create_response_future(query, parameters=None, trace=trace, custom_payload=options, timeout=timeout)
         future.message._query_params = graph_parameters
         future._protocol_handler = self.client_protocol_handler
