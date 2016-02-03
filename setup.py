@@ -27,7 +27,7 @@ class DocCommand(Command):
         pass
 
     def run(self):
-        path = "doc"
+        path = "dse/doc"
         mode = "html"
 
         import os
@@ -56,7 +56,7 @@ setup(
     version=__version__,
     description='DataStax Enterprise extensions for cassandra-driver',
     long_description=long_description,
-    packages=['dse'],
+    packages=['dse', 'dse.doc'],
     keywords='cassandra,dse,graph',
     include_package_data=True,
     install_requires=dependencies,

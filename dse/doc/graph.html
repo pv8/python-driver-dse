@@ -1,0 +1,163 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DSE Graph Queries &mdash; DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1.post0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation" href="index.html" />
+    <link rel="next" title="DSE Authentication" href="auth.html" />
+    <link rel="prev" title="DSE Geometry Types" href="geo_types.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="auth.html" title="DSE Authentication"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="geo_types.html" title="DSE Geometry Types"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="geo_types.html"
+                        title="previous chapter">DSE Geometry Types</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="auth.html"
+                        title="next chapter">DSE Authentication</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/graph.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dse-graph-queries">
+<h1>DSE Graph Queries<a class="headerlink" href="#dse-graph-queries" title="Permalink to this headline">¶</a></h1>
+<p>Use <code class="xref py py-meth docutils literal"><span class="pre">dse.cluster.Sessionx.execute_graph()</span></code> for executing gremlin queries in DSE Graph. The DSE extension executes
+graph queries over the Cassandra native protocol:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dse.cluster</span> <span class="kn">import</span> <span class="n">Cluster</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">Cluster</span><span class="p">()</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+<span class="n">session</span><span class="o">.</span><span class="n">execute_graph</span><span class="p">(</span><span class="s">&quot;system.createGraph(&#39;test&#39;)&quot;</span><span class="p">)</span>  <span class="c"># no graph name should be set any time the system API is used</span>
+<span class="n">session</span><span class="o">.</span><span class="n">default_graph_options</span><span class="o">.</span><span class="n">graph_name</span> <span class="o">=</span> <span class="s">&#39;test&#39;</span>  <span class="c"># use this default graph name for all queries</span>
+<span class="n">session</span><span class="o">.</span><span class="n">execute_graph</span><span class="p">(</span><span class="s">&#39;g.addV(&quot;name&quot;, &quot;John&quot;, &quot;age&quot;, 35)&#39;</span><span class="p">)</span>
+<span class="nb">id</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">execute_graph</span><span class="p">(</span><span class="s">&#39;g.addV(&quot;name&quot;, &quot;John&quot;, &quot;age&quot;, 35)&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+<span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">execute_graph</span><span class="p">(</span><span class="s">&#39;g.V()&#39;</span><span class="p">):</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>  <span class="c"># &#39;vertex&#39;</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;value&#39;</span><span class="p">])</span>  <span class="c"># &#39;John&#39;</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s">&#39;age&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s">&#39;value&#39;</span><span class="p">])</span>  <span class="c"># 35</span>
+</pre></div>
+</div>
+<p>By default (with <cite>Session.default_graph_row_factory</cite> set to <a class="reference internal" href="api/dse/graph.html#dse.graph.graph_result_row_factory" title="dse.graph.graph_result_row_factory"><code class="xref py py-func docutils literal"><span class="pre">graph.graph_result_row_factory()</span></code></a>), each result is a
+<a class="reference internal" href="api/dse/graph.html#dse.graph.Result" title="dse.graph.Result"><code class="xref py py-class docutils literal"><span class="pre">graph.Result</span></code></a>, which contains the graph result, parsed from JSON and removed from its outer dict.
+The result value is not transformed in any way presently, but the class does have some accessor convenience methods for
+accessing top-level properties by name (<cite>type</cite>, <cite>properties</cite> above), or lists by index:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># dicts with `__getattr__` or `__getitem__`</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">execute_graph</span><span class="p">(</span><span class="s">&quot;[[key_str: &#39;value&#39;, key_int: 3]]&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">result</span><span class="o">.</span><span class="n">value</span>  <span class="c"># dict</span>
+<span class="n">result</span><span class="o">.</span><span class="n">key_str</span>  <span class="c"># &#39;value&#39;</span>
+<span class="n">result</span><span class="o">.</span><span class="n">key_int</span>  <span class="c"># 3</span>
+<span class="n">result</span><span class="p">[</span><span class="s">&#39;key_str&#39;</span><span class="p">]</span>  <span class="c"># &#39;value&#39;</span>
+<span class="n">result</span><span class="p">[</span><span class="s">&#39;key_int&#39;</span><span class="p">]</span>  <span class="c"># 3</span>
+
+<span class="c"># lists with `__getitem__`</span>
+<span class="n">session</span><span class="o">.</span><span class="n">execute_graph</span><span class="p">(</span><span class="s">&#39;[[0, 1, 2]]&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>  <span class="c"># 1</span>
+</pre></div>
+</div>
+<p>You can use a different row factory by setting <code class="xref py py-attr docutils literal"><span class="pre">Session.default_graph_row_factory</span></code> or passing it to
+<code class="xref py py-meth docutils literal"><span class="pre">Session.execute_graph()</span></code>. For example, <a class="reference internal" href="api/dse/graph.html#dse.graph.single_object_row_factory" title="dse.graph.single_object_row_factory"><code class="xref py py-func docutils literal"><span class="pre">graph.single_object_row_factory()</span></code></a> returns the JSON result string`,
+unparsed.</p>
+<p>Named parameters are passed in a dict to <a class="reference internal" href="api/dse/cluster.html#dse.cluster.Session.execute_graph" title="dse.cluster.Session.execute_graph"><code class="xref py py-meth docutils literal"><span class="pre">cluster.Session.execute_graph()</span></code></a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">result_set</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">execute_graph</span><span class="p">(</span><span class="s">&#39;[a, b]&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;a&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">result_set</span><span class="p">]</span>  <span class="c"># [1, 2]</span>
+</pre></div>
+</div>
+<p>Graph options can be set in the session default (as shown in the first example) or specified per statement:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dse.graph</span> <span class="kn">import</span> <span class="n">SimpleGraphStatement</span>
+<span class="n">statement</span> <span class="o">=</span> <span class="n">SimpleGraphStatement</span><span class="p">(</span><span class="s">&#39;x.V()&#39;</span><span class="p">)</span>  <span class="c"># this query refers to the graph by &#39;x&#39; instead of the default &#39;g&#39;</span>
+<span class="n">statement</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">graph_alias</span> <span class="o">=</span> <span class="s">&#39;x&#39;</span>
+<span class="n">session</span><span class="o">.</span><span class="n">execute_graph</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="auth.html" title="DSE Authentication"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="geo_types.html" title="DSE Geometry Types"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, DataStax.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

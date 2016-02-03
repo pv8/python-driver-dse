@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dse.cluster &mdash; DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1.post0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for dse.cluster</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">six</span>
+
+<span class="kn">from</span> <span class="nn">cassandra.cluster</span> <span class="kn">import</span> <span class="n">Cluster</span><span class="p">,</span> <span class="n">Session</span>
+<span class="kn">import</span> <span class="nn">dse.cqltypes</span>  <span class="c"># unsued here, imported to cause type registration</span>
+<span class="kn">from</span> <span class="nn">dse.graph</span> <span class="kn">import</span> <span class="n">GraphOptions</span><span class="p">,</span> <span class="n">SimpleGraphStatement</span><span class="p">,</span> <span class="n">graph_result_row_factory</span>
+<span class="kn">from</span> <span class="nn">dse.util</span> <span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Circle</span><span class="p">,</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Polygon</span>
+
+
+<div class="viewcode-block" id="Cluster"><a class="viewcode-back" href="../../api/dse/cluster.html#dse.cluster.Cluster">[docs]</a><span class="k">class</span> <span class="nc">Cluster</span><span class="p">(</span><span class="n">Cluster</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cluster extending `cassandra.cluster.Cluster &lt;http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Cluster&gt;`_.</span>
+<span class="sd">    The API is identical, except that it returns a :class:`dse.cluster.Session` (see below).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_new_session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">all_hosts</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session_register_user_types</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">session</span>
+
+</div>
+<span class="n">_NOT_SET</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Session"><a class="viewcode-back" href="../../api/dse/cluster.html#dse.cluster.Session">[docs]</a><span class="k">class</span> <span class="nc">Session</span><span class="p">(</span><span class="n">Session</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A session extension based on `cassandra.cluster.Session &lt;http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Session&gt;`_</span>
+<span class="sd">    with additional features:</span>
+
+<span class="sd">        - Pre-registered DSE-specific types (geometric types)</span>
+<span class="sd">        - Graph execution API</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">default_graph_options</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Default options for graph queries, initialized as follows by default::</span>
+
+<span class="sd">        GraphOptions(graph_source=b&#39;default&#39;,</span>
+<span class="sd">                     graph_language=b&#39;gremlin-groovy&#39;)</span>
+
+<span class="sd">    See dse.graph.GraphOptions</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">default_graph_row_factory</span> <span class="o">=</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">graph_result_row_factory</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Row factory used for graph results.</span>
+<span class="sd">    The default is dse.graph.graph_result_row_factory.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">hosts</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">Session</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span> <span class="n">hosts</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">cql_encode_str_quoted</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s">&quot;&#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="n">val</span>
+
+        <span class="k">for</span> <span class="n">typ</span> <span class="ow">in</span> <span class="p">(</span><span class="n">Point</span><span class="p">,</span> <span class="n">Circle</span><span class="p">,</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">mapping</span><span class="p">[</span><span class="n">typ</span><span class="p">]</span> <span class="o">=</span> <span class="n">cql_encode_str_quoted</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_graph_options</span> <span class="o">=</span> <span class="n">GraphOptions</span><span class="p">(</span><span class="n">graph_source</span><span class="o">=</span><span class="n">b</span><span class="s">&#39;default&#39;</span><span class="p">,</span>
+                                                  <span class="n">graph_language</span><span class="o">=</span><span class="n">b</span><span class="s">&#39;gremlin-groovy&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Session.execute_graph"><a class="viewcode-back" href="../../api/dse/cluster.html#dse.cluster.Session.execute_graph">[docs]</a>    <span class="k">def</span> <span class="nf">execute_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">_NOT_SET</span><span class="p">,</span> <span class="n">trace</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">row_factory</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes a Gremlin query string or SimpleGraphStatement synchronously,</span>
+<span class="sd">        and returns a GraphResultSet from this execution.</span>
+
+<span class="sd">        `parameters` is dict of named parameters to bind. The values must be</span>
+<span class="sd">        JSON-serializable.</span>
+<span class="sd">        (TBD: make this customizable)</span>
+
+<span class="sd">        `timeout` and `trace` have the same meaning as in Session.execute.</span>
+
+<span class="sd">        `row_factory` defines how the results of this query are returned. If not set,</span>
+<span class="sd">        it defaults to :attr:`Session.default_graph_row_factory`.</span>
+
+<span class="sd">        Example usage::</span>
+
+<span class="sd">            &gt;&gt;&gt; session = cluster.connect()</span>
+<span class="sd">            &gt;&gt;&gt; statement = GraphStatement(&#39;x.v()&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; statement.options.graph_binding = &#39;x&#39;  # non-standard option set</span>
+<span class="sd">            &gt;&gt;&gt; results = session.execute_graph(statement)</span>
+<span class="sd">            &gt;&gt;&gt; for result in results:</span>
+<span class="sd">            ...     print(result.value)  # defaults results are dse.graph.Result</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">SimpleGraphStatement</span><span class="p">):</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get_options_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_graph_options</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="n">SimpleGraphStatement</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_graph_options</span><span class="o">.</span><span class="n">_graph_options</span>
+
+        <span class="n">graph_parameters</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">parameters</span><span class="p">:</span>
+            <span class="n">graph_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_params</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>
+
+        <span class="c"># TODO:</span>
+        <span class="c"># this is basically Session.execute_async, repeated here to customize the row factory. May want to add that</span>
+        <span class="c"># parameter to the session method</span>
+        <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="n">_NOT_SET</span><span class="p">:</span>
+            <span class="n">timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_timeout</span>
+        <span class="n">future</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_response_future</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">trace</span><span class="o">=</span><span class="n">trace</span><span class="p">,</span> <span class="n">custom_payload</span><span class="o">=</span><span class="n">options</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="n">future</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">_query_params</span> <span class="o">=</span> <span class="n">graph_parameters</span>
+        <span class="n">future</span><span class="o">.</span><span class="n">_protocol_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_protocol_handler</span>
+        <span class="n">future</span><span class="o">.</span><span class="n">row_factory</span> <span class="o">=</span> <span class="n">row_factory</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_graph_row_factory</span>
+        <span class="n">future</span><span class="o">.</span><span class="n">send_request</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+</div>
+    <span class="k">def</span> <span class="nf">_transform_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The parameters must be a dictionary. Unnamed parameters are not allowed.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">)]</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, DataStax.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

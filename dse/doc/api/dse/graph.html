@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dse.graph - Graph Statements, Options, and Row Factories &mdash; DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1.post0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation" href="../../index.html" />
+    <link rel="up" title="API Documentation" href="../index.html" />
+    <link rel="next" title="dse.util - Utilities" href="util.html" />
+    <link rel="prev" title="dse.auth - Authentication" href="auth.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="util.html" title="dse.util - Utilities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="auth.html" title="dse.auth - Authentication"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">API Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="auth.html"
+                        title="previous chapter"><code class="docutils literal"><span class="pre">dse.auth</span></code> - Authentication</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="util.html"
+                        title="next chapter"><code class="docutils literal"><span class="pre">dse.util</span></code> - Utilities</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/api/dse/graph.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-dse.graph">
+<span id="dse-graph-graph-statements-options-and-row-factories"></span><h1><code class="docutils literal"><span class="pre">dse.graph</span></code> - Graph Statements, Options, and Row Factories<a class="headerlink" href="#module-dse.graph" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="dse.graph.single_object_row_factory">
+<code class="descclassname">dse.graph.</code><code class="descname">single_object_row_factory</code><span class="sig-paren">(</span><em>column_names</em>, <em>rows</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dse/graph.html#single_object_row_factory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dse.graph.single_object_row_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the JSON string value of graph results</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dse.graph.graph_result_row_factory">
+<code class="descclassname">dse.graph.</code><code class="descname">graph_result_row_factory</code><span class="sig-paren">(</span><em>column_names</em>, <em>rows</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dse/graph.html#graph_result_row_factory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dse.graph.graph_result_row_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an object that can load graph results and produce specific types</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="dse.graph.GraphOptions">
+<em class="property">class </em><code class="descclassname">dse.graph.</code><code class="descname">GraphOptions</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dse/graph.html#GraphOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dse.graph.GraphOptions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Options for DSE Graph Query handler.
+See _graph_options map above for notes on valid options</p>
+<dl class="method">
+<dt id="dse.graph.GraphOptions.get_options_map">
+<code class="descname">get_options_map</code><span class="sig-paren">(</span><em>base_options</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dse/graph.html#GraphOptions.get_options_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dse.graph.GraphOptions.get_options_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a map for base_options updated with options set on this object, or
+base_options map if none were set.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dse.graph.GraphOptions.graph_alias">
+<code class="descname">graph_alias</code><a class="headerlink" href="#dse.graph.GraphOptions.graph_alias" title="Permalink to this definition">¶</a></dt>
+<dd><p>name of the graph in the query (default &#8220;g&#8221;)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dse.graph.GraphOptions.graph_language">
+<code class="descname">graph_language</code><a class="headerlink" href="#dse.graph.GraphOptions.graph_language" title="Permalink to this definition">¶</a></dt>
+<dd><p>the language used in the queries (default &#8220;gremlin-groovy&#8221;</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dse.graph.GraphOptions.graph_name">
+<code class="descname">graph_name</code><a class="headerlink" href="#dse.graph.GraphOptions.graph_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>name of the targeted graph.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dse.graph.GraphOptions.graph_source">
+<code class="descname">graph_source</code><a class="headerlink" href="#dse.graph.GraphOptions.graph_source" title="Permalink to this definition">¶</a></dt>
+<dd><p>choose the graph traversal source, configured on the server side.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dse.graph.SimpleGraphStatement">
+<em class="property">class </em><code class="descclassname">dse.graph.</code><code class="descname">SimpleGraphStatement</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dse/graph.html#SimpleGraphStatement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dse.graph.SimpleGraphStatement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple graph statement for dse.cluster.Session.execute_graph.
+Takes the same parameters as cassandra.query.SimpleStatement</p>
+<dl class="attribute">
+<dt id="dse.graph.SimpleGraphStatement.options">
+<code class="descname">options</code><em class="property"> = None</em><a class="headerlink" href="#dse.graph.SimpleGraphStatement.options" title="Permalink to this definition">¶</a></dt>
+<dd><p>GraphOptions for this statement.
+Any attributes set here override the GraphSession defaults.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dse.graph.Result">
+<em class="property">class </em><code class="descclassname">dse.graph.</code><code class="descname">Result</code><span class="sig-paren">(</span><em>json_value</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dse/graph.html#Result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dse.graph.Result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Graph results when <cite>graph_result_row_factory</cite> is used.
+The result json is deserialized into the value, and getters</p>
+<dl class="attribute">
+<dt id="dse.graph.Result.value">
+<code class="descname">value</code><em class="property"> = None</em><a class="headerlink" href="#dse.graph.Result.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deserialized value from the result</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="util.html" title="dse.util - Utilities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="auth.html" title="dse.auth - Authentication"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >API Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, DataStax.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>DSE Authentication &mdash; DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1.post0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation" href="index.html" />
+    <link rel="prev" title="DSE Graph Queries" href="graph.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="graph.html" title="DSE Graph Queries"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="graph.html"
+                        title="previous chapter">DSE Graph Queries</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/auth.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dse-authentication">
+<h1>DSE Authentication<a class="headerlink" href="#dse-authentication" title="Permalink to this headline">¶</a></h1>
+<p>The DSE extension provides two auth providers that work both with legacy kerberos and Cassandra authenticators,
+and the new DSE Authenticator. This allows client to configure this auth provider independently,
+and in advance of any server upgrade. These auth providers are configured in the same way as any previous implementation:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dse.auth</span> <span class="kn">import</span> <span class="n">DSEGSSAPIAuthProvider</span>
+<span class="n">auth_provider</span> <span class="o">=</span> <span class="n">DSEGSSAPIAuthProvider</span><span class="p">(</span><span class="n">service</span><span class="o">=</span><span class="s">&#39;dse&#39;</span><span class="p">,</span> <span class="n">qops</span><span class="o">=</span><span class="p">[</span><span class="s">&quot;auth&quot;</span><span class="p">])</span>
+<span class="n">cluster</span> <span class="o">=</span> <span class="n">Cluster</span><span class="p">(</span><span class="n">auth_provider</span><span class="o">=</span><span class="n">auth_provider</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">cluster</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Implementations are <a class="reference internal" href="api/dse/auth.html#dse.auth.DSEPlainTextAuthProvider" title="dse.auth.DSEPlainTextAuthProvider"><code class="xref py py-class docutils literal"><span class="pre">DSEPlainTextAuthProvider</span></code></a> and <a class="reference internal" href="api/dse/auth.html#dse.auth.DSEGSSAPIAuthProvider" title="dse.auth.DSEGSSAPIAuthProvider"><code class="xref py py-class docutils literal"><span class="pre">DSEGSSAPIAuthProvider</span></code></a>..</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="graph.html" title="DSE Graph Queries"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 0.0.1.post0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, DataStax.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>
