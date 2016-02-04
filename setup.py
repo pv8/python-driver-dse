@@ -31,10 +31,6 @@ class DocCommand(Command):
         mode = "html"
 
         import os
-        import shutil
-        shutil.rmtree(path, ignore_errors=True)  # is this required?
-        os.makedirs(path)
-
         import subprocess
         try:
             output = subprocess.check_output(
