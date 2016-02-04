@@ -12,7 +12,7 @@ from dse.graph import (SimpleGraphStatement, GraphOptions, Result,
 
 class GraphResultTests(unittest.TestCase):
 
-    _values = (None, 1, 1.2, True, False, [1, 2, 3], {u'x': 1, u'y': 2})
+    _values = (None, 1, 1.2, True, False, [1, 2, 3], {'x': 1, 'y': 2})
 
     def test_result_value(self):
         for v in self._values:
