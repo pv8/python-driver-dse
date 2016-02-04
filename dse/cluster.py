@@ -1,3 +1,5 @@
+# Copyright 2016 DataStax, Inc.
+
 import json
 import six
 

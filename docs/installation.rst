@@ -14,7 +14,7 @@ Installation through pip
 packages.  It will handle installing all Python dependencies for the driver at
 the same time as the driver itself.  To install the extension from downloaded tarball or zip::
 
-    pip install cassandra-driver-dse-1.0.0a1.post0.tar.gz
+    pip install <source-dist>
 
 This will pull the pre-release core driver from pypi. To avoid building Cython extensions
 in the core driver, use the environment variable switch::

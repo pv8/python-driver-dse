@@ -1,3 +1,5 @@
+# Copyright 2016 DataStax, Inc.
+
 from struct import Struct
 
 point_be = Struct('>dd')

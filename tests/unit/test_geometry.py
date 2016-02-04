@@ -1,3 +1,5 @@
+# Copyright 2016 DataStax, Inc.
+
 try:
     import unittest2 as unittest
 except ImportError:

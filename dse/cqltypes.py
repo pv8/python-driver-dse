@@ -1,3 +1,5 @@
+# Copyright 2016 DataStax, Inc.
+
 import io
 from itertools import chain
 import six

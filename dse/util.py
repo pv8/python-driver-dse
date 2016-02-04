@@ -1,3 +1,5 @@
+# Copyright 2016 DataStax, Inc.
+
 from itertools import chain
 
 

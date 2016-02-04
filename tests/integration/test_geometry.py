@@ -1,7 +1,5 @@
 # Copyright 2016 DataStax, Inc.
 
-
-
 from tests.integration import BasicGeometricUnitTestCase
 from cassandra.util import OrderedMap, sortedset
 from collections import namedtuple
