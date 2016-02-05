@@ -88,15 +88,16 @@ def single_object_row_factory(column_names, rows):
 
 def graph_result_row_factory(column_names, rows):
     """
-    Returns an object that can load graph results and produce specific types
+    Returns an object that can load graph results and produce specific types.
+    The Result JSON is deserialized and unpacked from the top-level 'result' dict.
     """
-    return [Result(row[0]) for row in rows]
+    return [Result(json.loads(row[0])['result']) for row in rows]
 
 
 class Result(object):
     """
-    Graph results when `graph_result_row_factory` is used.
-    The result json is deserialized into the value, and getters
+    Represents deserialized graph results.
+    Property and item getters are provided for convenience.
     """
 
     value = None
@@ -104,8 +105,8 @@ class Result(object):
     Deserialized value from the result
     """
 
-    def __init__(self, json_value):
-        self.value = json.loads(json_value)['result']
+    def __init__(self, value):
+        self.value = value
 
     def __getattr__(self, attr):
         if not isinstance(self.value, dict):
@@ -128,7 +129,7 @@ class Result(object):
         return str(self.value)
 
     def __repr__(self):
-        return "%s(%r)" % (Result.__name__, json.dumps({'result': self.value}))
+        return "%s(%r)" % (Result.__name__, self.value)
 
     def __eq__(self, other):
         return self.value == other.value
