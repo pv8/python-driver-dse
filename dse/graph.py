@@ -152,6 +152,13 @@ class Result(object):
             traceback.print_exc()
             raise TypeError("Could not create Edge from %r" % (self,))
 
+    def as_path(self):
+        try:
+            return Path(self.labels, self.objects)
+        except (AttributeError, ValueError, TypeError):
+            import traceback
+            traceback.print_exc()
+            raise TypeError("Could not create Edge from %r" % (self,))
 
 
 class Element(object):
@@ -211,3 +218,16 @@ class Edge(Element):
                 self.type, self.properties,
                 self.inV, self.inVLabel,
                 self.outV, self.outVLabel)
+
+
+class Path(object):
+
+    def __init__(self, labels, objects):
+        self.labels = labels
+        self.objects = [Result(o) for o in objects]
+
+    def __str__(self):
+        return str({'labels': self.labels, 'objects': self.objects})
+
+    def __repr__(self):
+        return "%s(%r, %r)" % (self.__class__.__name__, self.labels, self.objects)
