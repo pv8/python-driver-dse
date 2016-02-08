@@ -78,9 +78,9 @@ class GraphResultTests(unittest.TestCase):
 
 class GraphOptionTests(unittest.TestCase):
 
-    opt_mapping = {t[0]: t[2] for t in _graph_options}
+    opt_mapping = dict((t[0], t[2]) for t in _graph_options)
 
-    api_params = {p: str(i) for i, p in enumerate(opt_mapping)}
+    api_params = dict((p, str(i)) for i, p in enumerate(opt_mapping))
 
     def test_init(self):
         opts = GraphOptions(**self.api_params)
@@ -89,7 +89,7 @@ class GraphOptionTests(unittest.TestCase):
 
     def test_update(self):
         opts = GraphOptions(**self.api_params)
-        new_params = {k: str(int(v) + 1) for k, v in self.api_params.items()}
+        new_params = dict((k, str(int(v) + 1)) for k, v in self.api_params.items())
         opts.update(GraphOptions(**new_params))
         self._verify_api_params(opts, new_params)
 
