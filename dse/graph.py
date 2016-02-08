@@ -180,11 +180,6 @@ class Element(object):
     def __str__(self):
         return str(dict((k, getattr(self, k)) for k in self._attrs))
 
-    def __repr__(self):
-        return "%s(%r, %r, %r, %r)" % (self.__class__.__name__,
-                                       self.id, self.label,
-                                       self.type, self.properties)
-
 
 class Vertex(Element):
     element_type = 'vertex'
@@ -228,8 +223,11 @@ class Path(object):
         self.labels = labels
         self.objects = [Result(o) for o in objects]
 
+    def __eq__(self, other):
+        return self.labels == other.labels and self.objects == other.objects
+
     def __str__(self):
         return str({'labels': self.labels, 'objects': self.objects})
 
     def __repr__(self):
-        return "%s(%r, %r)" % (self.__class__.__name__, self.labels, self.objects)
+        return "%s(%r, %r)" % (self.__class__.__name__, self.labels, [o.value for o in self.objects])
