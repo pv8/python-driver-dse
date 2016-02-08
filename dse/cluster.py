@@ -49,17 +49,14 @@ class Session(Session):
     Row factory used for graph results.
     The default is dse.graph.graph_result_row_factory.
     """
+
     default_graph_timeout = 32.0
     """
-    A default timeout for graph queries measured in seconds
-    :meth:`.execute()` or :meth:`.execute_async()`.  This default may be
-    overridden with the `timeout` parameter for either of those methods
-    or the `timeout` parameter for :meth:`.ResponseFuture.result()`.
+    A default timeout (seconds) for graph queries executed with
+    :meth:`.execute_graph()`.  This default may be overridden with the
+    `timeout` parameter of that method.
 
     Setting this to :const:`None` will cause no timeouts to be set by default.
-
-    Please see :meth:`.ResponseFuture.result` for details on the scope and
-    effect of this timeout.
 
     .. versionadded:: 1.0.0
     """
@@ -86,7 +83,7 @@ class Session(Session):
         JSON-serializable.
         (TBD: make this customizable)
 
-        `timeout` and `trace` have the same meaning as in Session.execute.
+        `timeout` and `trace` have the same meaning as in `Session.execute <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Session.execute>`_.
 
         `row_factory` defines how the results of this query are returned. If not set,
         it defaults to :attr:`Session.default_graph_row_factory`.
