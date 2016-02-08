@@ -139,8 +139,6 @@ class Result(object):
         try:
             return Vertex(self.id, self.label, self.type, self.value.get('properties', {}))
         except (AttributeError, ValueError, TypeError):
-            import traceback
-            traceback.print_exc()
             raise TypeError("Could not create Vertex from %r" % (self,))
 
     def as_edge(self):
@@ -148,16 +146,12 @@ class Result(object):
             return Edge(self.id, self.label, self.type, self.value.get('properties', {}),
                         self.inV, self.inVLabel, self.outV, self.outVLabel)
         except (AttributeError, ValueError, TypeError):
-            import traceback
-            traceback.print_exc()
             raise TypeError("Could not create Edge from %r" % (self,))
 
     def as_path(self):
         try:
             return Path(self.labels, self.objects)
         except (AttributeError, ValueError, TypeError):
-            import traceback
-            traceback.print_exc()
             raise TypeError("Could not create Edge from %r" % (self,))
 
 
