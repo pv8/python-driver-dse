@@ -9,7 +9,8 @@ import json
 import six
 
 from dse.graph import (SimpleGraphStatement, GraphOptions, Result,
-                       _graph_options, graph_result_row_factory, single_object_row_factory)
+                       _graph_options, graph_result_row_factory, single_object_row_factory,
+                       Vertex, Edge, Path)
 
 
 class GraphResultTests(unittest.TestCase):
@@ -62,6 +63,117 @@ class GraphResultTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             result['something']
 
+    def test_as_vertex(self):
+        prop_name = 'name'
+        prop_val = 'val'
+        vertex_dict = {'id': object(),
+                       'label': object(),
+                       'type': 'vertex',
+                       'properties': {prop_name: [{'value': prop_val, 'whatever': object()}]}
+                      }
+        required_attrs = [k for k in vertex_dict if k != 'properties']
+        result = self._make_result(vertex_dict)
+        vertex = result.as_vertex()
+        for attr in required_attrs:
+            self.assertEqual(getattr(vertex, attr), vertex_dict[attr])
+        self.assertEqual(len(vertex.properties), 1)
+        self.assertEqual(vertex.properties[prop_name], prop_val)
+
+        # no props
+        modified_vertex_dict = vertex_dict.copy()
+        del modified_vertex_dict['properties']
+        vertex = self._make_result(modified_vertex_dict).as_vertex()
+        self.assertEqual(vertex.properties, {})
+
+        # wrong 'type'
+        modified_vertex_dict = vertex_dict.copy()
+        modified_vertex_dict['type'] = 'notavertex'
+        result = self._make_result(modified_vertex_dict)
+        self.assertRaises(TypeError, result.as_vertex)
+
+        # missing required properties
+        for attr in required_attrs:
+            modified_vertex_dict = vertex_dict.copy()
+            del modified_vertex_dict[attr]
+            result = self._make_result(modified_vertex_dict)
+            self.assertRaises(TypeError, result.as_vertex)
+
+    def test_as_edge(self):
+        prop_name = 'name'
+        prop_val = 'val'
+        edge_dict = {'id': object(),
+                     'label': object(),
+                     'type': 'edge',
+                     'inV': object(),
+                     'inVLabel': object(),
+                     'outV': object(),
+                     'outVLabel': object(),
+                     'properties': {prop_name: prop_val}
+                    }
+        required_attrs = [k for k in edge_dict if k != 'properties']
+        result = self._make_result(edge_dict)
+        edge = result.as_edge()
+        for attr in required_attrs:
+            self.assertEqual(getattr(edge, attr), edge_dict[attr])
+        self.assertEqual(len(edge.properties), 1)
+        self.assertEqual(edge.properties[prop_name], prop_val)
+
+        # no props
+        modified_edge_dict = edge_dict.copy()
+        del modified_edge_dict['properties']
+        edge = self._make_result(modified_edge_dict).as_edge()
+        self.assertEqual(edge.properties, {})
+
+        # wrong 'type'
+        modified_edge_dict = edge_dict.copy()
+        modified_edge_dict['type'] = 'notanedge'
+        result = self._make_result(modified_edge_dict)
+        self.assertRaises(TypeError, result.as_edge)
+
+        # missing required properties
+        for attr in required_attrs:
+            modified_edge_dict = edge_dict.copy()
+            del modified_edge_dict[attr]
+            result = self._make_result(modified_edge_dict)
+            self.assertRaises(TypeError, result.as_edge)
+
+    def test_as_path(self):
+        vertex_dict = {'id': object(),
+                       'label': object(),
+                       'type': 'vertex',
+                       'properties': {'name': [{'value': 'val', 'whatever': object()}]}
+                       }
+        edge_dict = {'id': object(),
+                     'label': object(),
+                     'type': 'edge',
+                     'inV': object(),
+                     'inVLabel': object(),
+                     'outV': object(),
+                     'outVLabel': object(),
+                     'properties': {'name': 'val'}
+                     }
+        path_dict = {'labels': [['a', 'b'], ['c']],
+                     'objects': [vertex_dict, edge_dict]
+                    }
+        result = self._make_result(path_dict)
+        path = result.as_path()
+        self.assertEqual(path.labels, path_dict['labels'])
+
+        # make sure inner objects are bound correctly
+        for d, result in zip(path_dict['objects'], path.objects):
+            self.assertEqual(d, result.value)
+            if result.type == 'vertex':
+                self.assertIsInstance(path.objects[0].as_vertex(), Vertex)
+            else:
+                self.assertIsInstance(path.objects[1].as_edge(), Edge)
+
+        # missing required properties
+        for attr in path_dict:
+            modified_path_dict = path_dict.copy()
+            del modified_path_dict[attr]
+            result = self._make_result(modified_path_dict)
+            self.assertRaises(TypeError, result.as_path)
+
     def test_str(self):
         for v in self._values:
             self.assertEqual(str(self._make_result(v)), str(v))
@@ -72,15 +184,48 @@ class GraphResultTests(unittest.TestCase):
             self.assertEqual(eval(repr(result)), result)
 
     def _make_result(self, value):
-        # result is always json-encoded map with 'result' item
-        return Result(json.dumps({'result': value}))
+        # direct pass-through now
+        return Result(value)
+
+
+class GraphTypeTests(unittest.TestCase):
+    # see also: GraphResultTests.test_as_*
+
+    def test_vertex_str_repr(self ):
+        prop_name = 'name'
+        prop_val = 'val'
+        kwargs = {'id': 'id_val', 'label': 'label_val', 'type': 'vertex', 'properties': {prop_name: [{'value': prop_val}]}}
+        vertex = Vertex(**kwargs)
+        transformed = kwargs.copy()
+        transformed['properties'] = {prop_name: prop_val}
+        self.assertEqual(eval(str(vertex)), transformed)
+        self.assertEqual(eval(repr(vertex)), vertex)
+
+    def test_edge_str_repr(self ):
+        prop_name = 'name'
+        prop_val = 'val'
+        kwargs = {'id': 'id_val', 'label': 'label_val', 'type': 'edge',
+                  'inV': 'inV_val', 'inVLabel': 'inVLabel_val',
+                  'outV': 'outV_val', 'outVLabel': 'outVLabel_val',
+                  'properties': {prop_name: prop_val}}
+        edge = Edge(**kwargs)
+        self.assertEqual(eval(str(edge)), kwargs)
+        self.assertEqual(eval(repr(edge)), edge)
+
+    def test_path_str_repr(self ):
+        kwargs = {'labels': [['a', 'b'], ['c']], 'objects': range(10)}
+        path = Path(**kwargs)
+        transformed = kwargs.copy()
+        transformed['objects'] = [Result(o) for o in kwargs['objects']]
+        self.assertEqual(eval(str(path)), transformed)
+        self.assertEqual(eval(repr(path)), path)
 
 
 class GraphOptionTests(unittest.TestCase):
 
-    opt_mapping = {t[0]: t[2] for t in _graph_options}
+    opt_mapping = dict((t[0], t[2]) for t in _graph_options)
 
-    api_params = {p: str(i) for i, p in enumerate(opt_mapping)}
+    api_params = dict((p, str(i)) for i, p in enumerate(opt_mapping))
 
     def test_init(self):
         opts = GraphOptions(**self.api_params)
@@ -89,7 +234,7 @@ class GraphOptionTests(unittest.TestCase):
 
     def test_update(self):
         opts = GraphOptions(**self.api_params)
-        new_params = {k: str(int(v) + 1) for k, v in self.api_params.items()}
+        new_params = dict((k, str(int(v) + 1)) for k, v in self.api_params.items())
         opts.update(GraphOptions(**new_params))
         self._verify_api_params(opts, new_params)
 
