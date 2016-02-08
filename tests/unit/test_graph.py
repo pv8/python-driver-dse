@@ -72,8 +72,8 @@ class GraphResultTests(unittest.TestCase):
             self.assertEqual(eval(repr(result)), result)
 
     def _make_result(self, value):
-        # result is always json-encoded map with 'result' item
-        return Result(json.dumps({'result': value}))
+        # direct pass-through now
+        return Result(value)
 
 
 class GraphOptionTests(unittest.TestCase):
