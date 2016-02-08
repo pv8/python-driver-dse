@@ -6,9 +6,9 @@ from cassandra.query import SimpleStatement
 from dse.auth import DSEGSSAPIAuthProvider
 import os, time, logging
 import subprocess
-from tests.integration import ADS_HOME
+from tests.integration import ADS_HOME, use_single_node_with_graph
 
-from integration import use_single_node, get_cluster, remove_cluster
+from integration import get_cluster, remove_cluster
 from ccmlib.dse_cluster import DseCluster
 try:
     import unittest2 as unittest
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 def setup_module():
-    use_single_node()
+    use_single_node_with_graph()
 
 def teardown_module():
     remove_cluster()  # this test messes with config
@@ -42,7 +42,7 @@ class BasicDseAuthTest(unittest.TestCase):
         self.dse_keytab = self.conf_file_dir+"dse.keytab"
         self.dseuser_keytab = self.conf_file_dir+"dseuser.keytab"
         self.cassandra_keytab = self.conf_file_dir+"cassandra.keytab"
-        actual_jar = ADS_HOME+"embedded-ads-1.0-SNAPSHOT-jar-with-dependencies.jar"
+        actual_jar = ADS_HOME+"embedded-ads.jar"
 
         # Create configuration directories if they don't already exists
         if not os.path.exists(self.conf_file_dir):

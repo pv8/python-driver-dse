@@ -1,15 +1,15 @@
 # Copyright 2016 DataStax, Inc.
 
-
-from tests.integration import BasicGraphUnitTestCase
+import time
+from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph
 
 
 from cassandra.protocol import ServerError
 from dse.graph import SimpleGraphStatement
-from integration import use_single_node
 
 def setup_module():
-    use_single_node()
+    use_single_node_with_graph()
+
 
 class BasicGraphTest(BasicGraphUnitTestCase):
 
@@ -59,6 +59,26 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             for edge in rs:
                 self._validate_classic_edge(edge)
 
+        def test_graph_classic_path(self):
+            """
+            Test to validate that the path version of the result type is generated correctly. It also
+            tests basic path results as that is not covered elsewhere
+
+            @since 1.0.0
+            @jira_ticket PYTHON-479
+            @expected_result path object should be unpacked correctly including all nested edges and verticies
+            @test_category dse graph
+            """
+            self._generate_classic()
+
+            rs = self.session.execute_graph("g.V().hasLabel('person').has('name', 'marko').as('a')" +
+                ".outE('knows').inV().as('c', 'd').outE('created').as('e', 'f', 'g').inV().path()");
+            rs_list = list(rs)
+            self.assertEqual(len(rs_list), 2)
+            for result in rs_list:
+                path = result.as_path()
+                self._validate_path_result_type(path)
+
         def test_large_create_script(self):
             """
             Test to validate that server errors due to large groovy scripts are properly surfaced
@@ -101,20 +121,17 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         def test_result_types(self):
             """
-            Test to validate that result types are properly cast on return
-
-            Creates a small grap with vertices that contain properties of many different types.
-            Queries all vertices and ensure that properties in result set are the correct type
+            Test to validate that the edge and vertex version of results are constructed correctly.
 
             @since 1.0.0
-            @jira_ticket PYTHON-457
-            @expected_result result set types should map correctly to groovy types
-
+            @jira_ticket PYTHON-479
+            @expected_result edge/vertex result types should be unpacked correctly.
             @test_category dse graph
             """
             self._generate_multi_field_graph()
 
             rs = self.session.execute_graph("g.V()")
+
             for result in rs:
                 self._validate_type(result)
 
@@ -177,8 +194,33 @@ class BasicGraphTest(BasicGraphUnitTestCase):
                                         schema.buildVertexLabel('PointV').add();
                                         schema.buildPropertyKey('pointP', Point.class).add();''')
             rs = self.session.execute_graph('''g.addV(label, 'PointV', 'pointP', 'POINT(0 1)');''')
-            #if result set is not parsed correctly this will throw an exception
+            # if result set is not parsed correctly this will throw an exception
             self.assertIsNotNone(rs)
+
+        def test_result_forms(self):
+            """
+            Test to validate that geometric types function correctly
+
+            Creates a very simple graph, and tries to insert a simple point type
+
+            @since 1.0.0
+            @jira_ticket DSP-8087
+            @expected_result json types assoicated with insert is parsed correctly
+
+            @test_category dse graph
+            """
+            self._generate_classic()
+            rs = list(self.session.execute_graph('g.V()'))
+            self.assertGreater(len(rs),0, "Result set was empty this was not expected")
+            for vertex in rs:
+                vertex_result = vertex.as_vertex()
+                self._validate_classic_vertex_return_type(vertex_result)
+
+            rs = list(self.session.execute_graph('g.E()'))
+            self.assertGreater(len(rs),0, "Result set was empty this was not expected")
+            for edge in rs:
+                edge_result = edge.as_edge()
+                self._validate_classic_edge_return_type(edge_result)
 
         def test_statement_graph_options(self):
             s = self.session
@@ -226,20 +268,36 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             self.assertIn('name', vertex_props)
             self.assertTrue('lang' in vertex_props or 'age' in vertex_props)
 
+        def _validate_classic_vertex_return_type(self, vertex_obj):
+            self._validate_generic_vertex_result_type(vertex_obj)
+            vertex_props = vertex_obj.properties
+            self.assertIn('name', vertex_props)
+            self.assertTrue('lang' in vertex_props or 'age' in vertex_props)
+
         def _validate_generic_vertex_values_exist(self, vertex):
             value_map = vertex.value
             self.assertIn('properties', value_map)
             self.assertIn('type', value_map)
             self.assertIn('id', value_map)
             self.assertIn('label', value_map)
-            self.assertIn('label', value_map)
             self.assertIn('type', value_map)
-            self.assertIn('id', value_map)
+
+        def _validate_generic_vertex_result_type(self, vertex_obj):
+            self.assertIsNotNone(vertex_obj.id)
+            self.assertIsNotNone(vertex_obj.type)
+            self.assertIsNotNone(vertex_obj.label)
+            self.assertIsNotNone(vertex_obj.properties)
+
+        def _validate_classic_edge_properties(self, edge_properties):
+            self.assertEqual(len(edge_properties.keys()), 1)
+            self.assertIn('weight', edge_properties)
+
+        def _validate_classic_edge_return_type(self, edge_obj):
+            self._validate_generic_edge_result_type(edge_obj)
+            self._validate_classic_edge_properties(edge_obj.properties)
 
         def _validate_classic_edge(self, edge):
-            edge_props = edge.properties
-            self.assertEqual(len(edge_props.keys()), 1)
-            self.assertIn('weight', edge_props)
+            self._validate_classic_edge_properties(edge.properties)
             self._validate_generic_edge_values_exist(edge)
 
         def _validate_line_edge(self, edge):
@@ -259,21 +317,49 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             self.assertIn('type', value_map)
             self.assertIn('id', value_map)
 
+        def _validate_generic_edge_result_type(self, edge_obj):
+            self.assertIsNotNone(edge_obj.properties)
+            self.assertIsNotNone(edge_obj.outV)
+            self.assertIsNotNone(edge_obj.outVLabel)
+            self.assertIsNotNone(edge_obj.inV)
+            self.assertIsNotNone(edge_obj.inVLabel)
+            self.assertIsNotNone(edge_obj.id)
+            self.assertIsNotNone(edge_obj.type)
+            self.assertIsNotNone(edge_obj.label)
+
+        def _validate_path_result_type(self, path_obj):
+            self.assertIsNotNone(path_obj.labels)
+            for object in path_obj.objects:
+                if(object.type == 'edge'):
+                    self._validate_classic_edge_return_type(object)
+                elif(object.type == 'vertex'):
+                    self._validate_classic_vertex_return_type(object)
+                else:
+                    self.fail("Invalid object found in path "+ str(object.type))
+
         def _generate_classic(self):
-            rs = self.session.execute_graph('''
-                Vertex marko = graph.addVertex("name", "marko", "age", 29);
-                Vertex vadas = graph.addVertex("name", "vadas", "age", 27);
-                Vertex lop = graph.addVertex("name", "lop", "lang", "java");
-                Vertex josh = graph.addVertex("name", "josh", "age", 32);
-                Vertex ripple = graph.addVertex("name", "ripple", "lang", "java");
-                Vertex peter = graph.addVertex("name", "peter", "age", 35);
-                marko.addEdge("knows", vadas, "weight", 0.5f);
-                marko.addEdge("knows", josh, "weight", 1.0f);
-                marko.addEdge("created", lop, "weight", 0.4f);
-                josh.addEdge("created", ripple, "weight", 1.0f);
-                josh.addEdge("created", lop, "weight", 0.4f);
-                peter.addEdge("created", lop, "weight", 0.2f);''')
-            return rs
+            to_run=['''graph.schema().buildVertexLabel('person').add()''',
+                    '''graph.schema().buildVertexLabel('software').add()''',
+                    '''graph.schema().buildEdgeLabel('created').add()''',
+                    '''graph.schema().buildPropertyKey('name', String.class).add()''',
+                    '''graph.schema().buildPropertyKey('age', Integer.class).add()''',
+                    '''graph.schema().buildPropertyKey('lang', String.class).add()''',
+                    '''graph.schema().buildPropertyKey('weight', Float.class).add()''',
+                    '''Vertex marko = graph.addVertex(label, 'person', 'name', 'marko', 'age', 29);
+                    Vertex vadas = graph.addVertex(label, 'person', 'name', 'vadas', 'age', 27);
+                    Vertex lop = graph.addVertex(label, 'software', 'name', 'lop', 'lang', 'java');
+                    Vertex josh = graph.addVertex(label, 'person', 'name', 'josh', 'age', 32);
+                    Vertex ripple = graph.addVertex(label, 'software', 'name', 'ripple', 'lang', 'java');
+                    Vertex peter = graph.addVertex(label, 'person', 'name', 'peter', 'age', 35);
+                    marko.addEdge('knows', vadas, 'weight', 0.5f);
+                    marko.addEdge('knows', josh, 'weight', 1.0f);
+                    marko.addEdge('created', lop, 'weight', 0.4f);
+                    josh.addEdge('created', ripple, 'weight', 1.0f);
+                    josh.addEdge('created', lop, 'weight', 0.4f);
+                    peter.addEdge('created', lop, 'weight', 0.2f);''']
+
+            for run in to_run:
+                self.session.execute_graph(run)
 
         def _generate_line_graph(self, length):
             query_parts = []
@@ -285,28 +371,22 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             return final_graph_generation_statement
 
         def _generate_multi_field_graph(self):
-            rs = self.session.execute_graph('''
-                short s1 = 5000;
-                int i1 = 1000000000;
-                Integer i2 = 100000000;
-                long l1 = 9223372036854775807;
-                Long l2 = 100000000000000000L;
-                float f1 = 3.5f;
-                double d1 = 3.5e40;
-                Double d2 = 3.5e40d;
-                graph.addVertex(label, "shortvertex", "shortvalue", s1);
-                graph.addVertex(label, "intvertex", "intvalue", i1);
-                graph.addVertex(label, "intvertex2", "intvalue2", i2);
-                graph.addVertex(label, "longvertex", "longvalue", l1);
-                graph.addVertex(label, "longvertex2", "longvalue2", l2);
-                graph.addVertex(label, "floatvertex", "floatvalue", f1);
-                graph.addVertex(label, "doublevertex", "doublevalue", d1);
-                graph.addVertex(label, "doublevertex2", "doublevalue2", d2);''')
-            return rs
+            to_run= ['''short s1 = 5000; graph.addVertex(label, "shortvertex", "shortvalue", s1);''',
+                     '''int i1 = 1000000000; graph.addVertex(label, "intvertex", "intvalue", i1);''',
+                     '''Integer i2 = 100000000; graph.addVertex(label, "intvertex2", "intvalue2", i2);''',
+                     '''long l1 = 9223372036854775807; graph.addVertex(label, "longvertex", "longvalue", l1);''',
+                     '''Long l2 = 100000000000000000L; graph.addVertex(label, "longvertex2", "longvalue2", l2);''',
+                     '''float f1 = 3.5f; graph.addVertex(label, "floatvertex", "floatvalue", f1);''',
+                     '''double d1 = 3.5e40; graph.addVertex(label, "doublevertex", "doublevalue", d1);''',
+                     '''Double d2 = 3.5e40d; graph.addVertex(label, "doublevertex2", "doublevalue2", d2);''']
+
+            for run in to_run:
+                self.session.execute_graph(run)
+
 
         def _generate_large_complex_graph(self, size):
-            to_run = '''
-                int size = 2000;
+
+            to_run ='''int size = 2000;
                 List ids = new ArrayList();
                 Vertex v = graph.addVertex();
                 v.property("ts", 100001);
@@ -327,4 +407,4 @@ class BasicGraphTest(BasicGraphUnitTestCase):
                     ids.add(v.id());
                 }
                 g.V().count();'''
-            self.session.execute_graph(to_run)
+            self.session.execute_graph(to_run, timeout=32)
