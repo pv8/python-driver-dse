@@ -174,6 +174,9 @@ class Element(object):
     def _extract_properties(properties):
         return dict(properties)
 
+    def __eq__(self, other):
+        return all(getattr(self, attr) == getattr(other, attr) for attr in self._attrs)
+
     def __str__(self):
         return str(dict((k, getattr(self, k)) for k in self._attrs))
 
@@ -190,6 +193,11 @@ class Vertex(Element):
     def _extract_properties(properties):
         # I have no idea why these properties are in a dict in a single-item list :-/
         return dict((k, v[0]['value']) for k, v in properties.items())
+
+    def __repr__(self):
+        return "%s(%r, %r, %r, %r)" % (self.__class__.__name__,
+                                       self.id, self.label,
+                                       self.type, {k: [{'value': v}] for k, v in self.properties.items()})  # reproduce the server-sent structure O_o
 
 
 class Edge(Element):
