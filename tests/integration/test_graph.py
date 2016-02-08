@@ -1,11 +1,13 @@
 # Copyright 2016 DataStax, Inc.
-
-
 from tests.integration import BasicGraphUnitTestCase
 
+import json
 
+from cassandra import OperationTimedOut
 from cassandra.protocol import ServerError
-from dse.graph import SimpleGraphStatement
+from cassandra.query import QueryTrace
+from dse.graph import SimpleGraphStatement, graph_result_row_factory, Result, single_object_row_factory
+
 from integration import use_single_node
 
 
@@ -201,6 +203,52 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         self.assertRaises(ServerError, s.execute_graph, statement)
         statement.options.graph_alias = 'x'
         s.execute_graph(statement)
+
+    def test_execute_graph_timeout(self):
+        s = self.session
+
+        value = [1, 2, 3]
+        query = "[%r]" % (value,)
+
+        # default is passed down
+        rs = s.execute_graph(query)
+        self.assertEqual(rs[0].value, value)
+        self.assertEqual(rs.response_future.timeout, s.default_graph_timeout)
+
+        # tiny timeout times out as expected
+        self.assertRaises(OperationTimedOut, s.execute_graph, query, timeout=0.0001)
+
+    def test_execute_graph_trace(self):
+        s = self.session
+
+        value = [1, 2, 3]
+        query = "[%r]" % (value,)
+
+        # default is no trace
+        rs = s.execute_graph(query)
+        self.assertEqual(rs[0].value, value)
+        self.assertIsNone(rs.get_query_trace())
+
+        # request trace
+        rs = s.execute_graph(query, trace=True)
+        self.assertEqual(rs[0].value, value)
+        qt = rs.get_query_trace(max_wait_sec=10)
+        self.assertIsInstance(qt, QueryTrace)
+        self.assertIsNotNone(qt.duration)
+
+    def test_execute_graph_row_factory(self):
+        s = self.session
+
+        # default Results
+        self.assertEqual(s.default_graph_row_factory, graph_result_row_factory)
+        result = s.execute_graph("123")[0]
+        self.assertIsInstance(result, Result)
+        self.assertEqual(result.value, 123)
+
+        # other via parameter
+        rs = s.execute_graph("123", row_factory=single_object_row_factory)
+        self.assertEqual(rs.response_future.row_factory, single_object_row_factory)
+        self.assertEqual(json.loads(rs[0]), {'result': 123})
 
     def _validate_type(self, vertex):
         values = vertex.properties.values()
