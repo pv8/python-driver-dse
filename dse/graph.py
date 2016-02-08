@@ -192,7 +192,7 @@ class Vertex(Element):
     def __repr__(self):
         return "%s(%r, %r, %r, %r)" % (self.__class__.__name__,
                                        self.id, self.label,
-                                       self.type, {k: [{'value': v}] for k, v in self.properties.items()})  # reproduce the server-sent structure O_o
+                                       self.type, dict((k, [{'value': v}]) for k, v in self.properties.items()))  # reproduce the server-sent structure O_o
 
 
 class Edge(Element):
