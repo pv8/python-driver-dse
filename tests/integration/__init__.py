@@ -11,6 +11,7 @@ from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnit
 from integration import teardown_package as base_teardown
 from dse.cluster import Cluster
 
+from integration import use_single_node
 home = expanduser('~')
 
 # Home directory of the Embedded Apache Directory Server to use
@@ -18,6 +19,9 @@ ADS_HOME = os.getenv('ADS_HOME', home)
 
 def teardown_package():
     base_teardown()
+
+def use_single_node_with_graph(start=True, workloads=[]):
+    use_single_node(start=start, workloads=['graph'])
 
 class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
     """

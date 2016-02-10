@@ -1,9 +1,9 @@
 # Copyright 2016 DataStax, Inc.
 
-from tests.integration import BasicGeometricUnitTestCase
+
+from tests.integration import BasicGeometricUnitTestCase, use_single_node_with_graph
 from cassandra.util import OrderedMap, sortedset
 from collections import namedtuple
-from integration import use_single_node
 
 try:
     import unittest2 as unittest
@@ -15,7 +15,7 @@ from dse.cqltypes import CircleType, LineStringType, PointType, PolygonType
 
 
 def setup_module():
-    use_single_node()
+    use_single_node_with_graph()
 
 
 class AbstractGeometricTypeTest():
