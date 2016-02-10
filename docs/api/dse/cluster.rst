@@ -11,4 +11,6 @@
 
    .. autoattribute:: default_graph_row_factory
 
+   .. autoattribute:: default_graph_timeout
+
    .. automethod:: execute_graph(statement[, parameters][, timeout][, trace][, row_factory])
