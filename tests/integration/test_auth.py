@@ -61,7 +61,7 @@ class BasicDseAuthTest(unittest.TestCase):
         if isinstance(ccm_cluster, DseCluster):
             # Setup kerberos options in dse.yaml
             config_options = {'kerberos_options': {'keytab': self.dse_keytab,
-                                                   'service_principal': 'dse/127.0.0.1@DATASTAX.COM',
+                                                   'service_principal': 'dse/_HOST@DATASTAX.COM',
                                                    'qop': 'auth'},
                               'authentication_options' : {'enabled': 'true',
                                                           'default_scheme': 'kerberos',
