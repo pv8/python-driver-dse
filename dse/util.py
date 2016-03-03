@@ -23,7 +23,7 @@ class Point(object):
         self.y = y
 
     def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
+        return isinstance(other, Point) and self.x == other.x and self.y == other.y
 
     def __hash__(self):
         return hash((self.x, self.y))
@@ -65,7 +65,7 @@ class Circle(object):
         self.r = r
 
     def __eq__(self, other):
-        return self.x == other.x and self.y == other.y and self.r == other.r
+        return isinstance(other, Circle) and self.x == other.x and self.y == other.y and self.r == other.r
 
     def __hash__(self):
         return hash((self.x, self.y, self.r))
@@ -97,7 +97,7 @@ class LineString(object):
         self.coords = tuple(coords)
 
     def __eq__(self, other):
-        return self.coords == other.coords
+        return isinstance(other, LineString) and self.coords == other.coords
 
     def __hash__(self):
         return hash(self.coords)
@@ -119,7 +119,7 @@ class _LinearRing(object):
         self.coords = tuple(coords)
 
     def __eq__(self, other):
-        return self.coords == other.coords
+        return isinstance(other, _LinearRing) and self.coords == other.coords
 
     def __hash__(self):
         return hash(self.coords)
@@ -155,7 +155,7 @@ class Polygon(object):
         self.interiors = tuple(_LinearRing(e) for e in interiors) if interiors else tuple()
 
     def __eq__(self, other):
-        return self.exterior == other.exterior and self.interiors == other.interiors
+        return isinstance(other, Polygon) and self.exterior == other.exterior and self.interiors == other.interiors
 
     def __hash__(self):
         return hash((self.exterior, self.interiors))
