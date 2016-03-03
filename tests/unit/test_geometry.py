@@ -39,25 +39,26 @@ class GeoTypes(unittest.TestCase):
         self._verify_both_endian(PolygonType, "IIdddddd", (WKBGeometryType.POLYGON, 1, 3, 1, 2, 3, 4, 5, 6), Polygon(((1, 2), (3, 4), (5, 6))))
 
     def test_empty_wkb(self):
-        for cls in (Point, LineString, Polygon):
+        for cls in (LineString, Polygon):
             class_name = cls.__name__
             cql_type = lookup_casstype(class_name + 'Type')
             self.assertEqual(str(cql_type.from_binary(cql_type.to_binary(cls(), 0), 0)), class_name.upper() + " EMPTY")
-
+        self.assertEqual(str(PointType.from_binary(PointType.to_binary(Point(), 0), 0)), "POINT (nan nan)")
 
     def test_str_wkt(self):
         self.assertEqual(str(Point(1., 2.)), 'POINT (1.0 2.0)')
+        self.assertEqual(str(Point()), "POINT (nan nan)")
         self.assertEqual(str(LineString(((1., 2.), (3., 4.), (5., 6.)))), 'LINESTRING (1.0 2.0, 3.0 4.0, 5.0 6.0)')
         self.assertEqual(str(_LinearRing(((1., 2.), (3., 4.), (5., 6.)))), 'LINEARRING (1.0 2.0, 3.0 4.0, 5.0 6.0)')
         self.assertEqual(str(Polygon([(10.1, 10.0), (110.0, 10.0), (110., 110.0), (10., 110.0), (10., 10.0)],
                                      [[(20., 20.0), (20., 30.0), (30., 30.0), (30., 20.0), (20., 20.0)],
                                       [(40., 20.0), (40., 30.0), (50., 30.0), (50., 20.0), (40., 20.0)]])),
                          'POLYGON ((10.1 10.0, 110.0 10.0, 110.0 110.0, 10.0 110.0, 10.0 10.0), (20.0 20.0, 20.0 30.0, 30.0 30.0, 30.0 20.0, 20.0 20.0), (40.0 20.0, 40.0 30.0, 50.0 30.0, 50.0 20.0, 40.0 20.0))')
+
         class LinearRing(_LinearRing):
             pass
-        for cls in (Point, LineString, LinearRing, Polygon):
+        for cls in (LineString, LinearRing, Polygon):
             self.assertEqual(str(cls()), cls.__name__.upper() + " EMPTY")
-
 
     def test_repr(self):
         for geo in (Point(1., 2.),

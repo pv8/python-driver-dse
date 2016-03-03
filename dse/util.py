@@ -1,7 +1,6 @@
 # Copyright 2016 DataStax, Inc.
 
 from itertools import chain
-from math import isnan
 
 _nan = float('nan')
 
@@ -35,8 +34,6 @@ class Point(object):
         """
         Well-known text representation of the point
         """
-        if any(isnan(v) for v in (self.x, self.y)):
-            return "POINT EMPTY"
         return "POINT (%r %r)" % (self.x, self.y)
 
     def __repr__(self):
