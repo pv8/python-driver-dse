@@ -68,3 +68,19 @@ class GeoTypes(unittest.TestCase):
                             [[(20., 20.0), (20., 30.0), (30., 30.0), (30., 20.0), (20., 20.0)],
                              [(40., 20.0), (40., 30.0), (50., 30.0), (50., 20.0), (40., 20.0)]])):
             self.assertEqual(len(set((geo, geo))), 1)
+
+    def test_eq(self):
+        for geo in (Point(1., 2.),
+                    Circle(1., 2., 3.),
+                    LineString(((1., 2.), (3., 4.), (5., 6.))),
+                    _LinearRing(((1., 2.), (3., 4.), (5., 6.))),
+                    Polygon([(10.1, 10.0), (110.0, 10.0), (110., 110.0), (10., 110.0), (10., 10.0)],
+                            [[(20., 20.0), (20., 30.0), (30., 30.0), (30., 20.0), (20., 20.0)],
+                             [(40., 20.0), (40., 30.0), (50., 30.0), (50., 20.0), (40., 20.0)]])):
+            # same type
+            self.assertEqual(geo, geo)
+
+            # does not blow up on other types
+            # specifically use assertFalse(eq) to make sure we're using the geo __eq__ operator
+            self.assertFalse(geo == object())
+
