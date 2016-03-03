@@ -43,51 +43,6 @@ class Point(object):
         return "%s(%r, %r)" % (self.__class__.__name__, self.x, self.y)
 
 
-class Circle(object):
-    """
-    Represents a circle geometry for DSE
-    This is not an official OGC type, but a DSE type.
-    """
-
-    x = None
-    """
-    x coordinate of the circle center
-    """
-
-    y = None
-    """
-    y coordinate of the circle center
-    """
-
-    r = None
-    """
-    radius of the circle
-    """
-
-    def __init__(self, x=_nan, y=_nan, r=_nan):
-        self.x = x
-        self.y = y
-        self.r = r
-
-    def __eq__(self, other):
-        return isinstance(other, Circle) and self.x == other.x and self.y == other.y and self.r == other.r
-
-    def __hash__(self):
-        return hash((self.x, self.y, self.r))
-
-    def __str__(self):
-        """
-        Well-known-text-like representation of the circle.
-        (not an official OGC type)
-        """
-        if any(isnan(v) for v in (self.x, self.y, self.r)):
-            return "CIRCLE EMPTY"
-        return "CIRCLE ((%r %r) %r)" % (self.x, self.y, self.r)
-
-    def __repr__(self):
-        return "%s(%r, %r, %r)" % (self.__class__.__name__, self.x, self.y, self.r)
-
-
 class LineString(object):
     """
     Represents a linestring geometry for DSE

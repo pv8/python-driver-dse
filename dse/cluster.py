@@ -6,7 +6,7 @@ import six
 from cassandra.cluster import Cluster, Session
 import dse.cqltypes  # unsued here, imported to cause type registration
 from dse.graph import GraphOptions, SimpleGraphStatement, graph_result_row_factory
-from dse.util import Point, Circle, LineString, Polygon
+from dse.util import Point, LineString, Polygon
 
 
 class Cluster(Cluster):
@@ -68,7 +68,7 @@ class Session(Session):
         def cql_encode_str_quoted(val):
             return "'%s'" % val
 
-        for typ in (Point, Circle, LineString, Polygon):
+        for typ in (Point, LineString, Polygon):
             self.encoder.mapping[typ] = cql_encode_str_quoted
 
         self.default_graph_options = GraphOptions(graph_source=b'default',

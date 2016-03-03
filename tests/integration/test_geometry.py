@@ -10,8 +10,8 @@ try:
 except ImportError:
     import unittest  # noqa
 from uuid import uuid1
-from dse.util import Point, Circle, LineString, Polygon
-from dse.cqltypes import CircleType, LineStringType, PointType, PolygonType
+from dse.util import Point, LineString, Polygon
+from dse.cqltypes import LineStringType, PointType, PolygonType
 
 
 def setup_module():
@@ -23,7 +23,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_insert_simple(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, using simple inline formating.
+        This tests will attempt to insert a point, polygon, or line, using simple inline formating.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -35,7 +35,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_insert_simple_prepared(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, using prepared statements.
+        This tests will attempt to insert a point, polygon, or line, using prepared statements.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -48,7 +48,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_insert_simple_prepared_with_bound(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, using prepared statements and bind.
+        This tests will attempt to insert a point, polygon, or line, using prepared statements and bind.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -62,7 +62,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_insert_as_list(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, as values of list.
+        This tests will attempt to insert a point, polygon, or line, as values of list.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -76,7 +76,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_insert_as_set(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, as values of set.
+        This tests will attempt to insert a point, polygon, or line, as values of set.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -90,7 +90,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_insert_as_map_keys(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, as keys of a map.
+        This tests will attempt to insert a point, polygon, or line, as keys of a map.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -104,7 +104,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_insert_as_map_values(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, as values of a map.
+        This tests will attempt to insert a point, polygon, or line, as values of a map.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -118,7 +118,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_insert_as_tuple(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, as values of a tuple.
+        This tests will attempt to insert a point, polygon, or line, as values of a tuple.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -132,7 +132,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_insert_as_udt(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, as members of a udt.
+        This tests will attempt to insert a point, polygon, or line, as members of a udt.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -151,7 +151,7 @@ class AbstractGeometricTypeTest():
 
     def test_should_accept_as_partition_key(self):
         """
-        This tests will attempt to insert a point, polygon, circle, or line, as a partition key.
+        This tests will attempt to insert a point, polygon, or line, as a partition key.
         @since 1.0.0
         @jira_ticket PYTHON-456
         @test_category dse geometric
@@ -171,14 +171,6 @@ class AbstractGeometricTypeTest():
         rs=self.session.execute("SELECT {0} from tbl where k={1}".format(value,key))
         retrieved=rs[0]._asdict()[value]
         self.assertEqual(expected, retrieved)
-
-
-class BasicGeometricCircleTypeTest(AbstractGeometricTypeTest, BasicGeometricUnitTestCase):
-    """
-    Runs all the geometric tests against CircleType
-    """
-    cql_type_name = "'{0}'".format(CircleType.typename)
-    original_value = Circle(.4, .8, 10000)
 
 
 class BasicGeometricPointTypeTest(AbstractGeometricTypeTest, BasicGeometricUnitTestCase):
