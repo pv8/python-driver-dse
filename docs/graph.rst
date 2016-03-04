@@ -5,14 +5,24 @@ graph queries over the Cassandra native protocol::
 
     from dse.cluster import Cluster
     session = Cluster().connect()
-    session.execute_graph("system.createGraph('test')")  # no graph name should be set any time the system API is used
-    session.default_graph_options.graph_name = 'test'  # use this default graph name for all queries
+
+    # no graph_options graph_name should be set any time the system API is used
+    # otherwise the request will fail
+    session.execute_graph("system.createGraph('test')")
+
+    # after we're done setting up system, we can set the default graph_name to use
+    # for future queries using this session
+    session.default_graph_options.graph_name = 'test'
     session.execute_graph('g.addV("name", "John", "age", 35)')
     id = session.execute_graph('g.addV("name", "John", "age", 35)')[0].value
     for res in session.execute_graph('g.V()'):
         print(res.type)  # 'vertex'
         print(res.properties['name'][0]['value'])  # 'John'
         print(res.properties['age'][0]['value'])  # 35
+
+    # graph_name should be removed if we need to interact with the system API again
+    del session.default_graph_options.graph_name
+    session.execute_graph("system.dropGraph('test')")
 
 By default (with `Session.default_graph_row_factory` set to :func:`.graph.graph_result_row_factory`), each result is a
 :class:`.graph.Result`, which contains the graph result, parsed from JSON and removed from its outer dict.
