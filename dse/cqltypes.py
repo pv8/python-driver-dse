@@ -7,8 +7,8 @@ from six.moves import range
 import struct
 from cassandra.cqltypes import CassandraType
 from cassandra.util import is_little_endian as _platform_is_le
-from dse.marshal import point_be, point_le, circle_be, circle_le
-from dse.util import Point, Circle, LineString, Polygon
+from dse.marshal import point_be, point_le
+from dse.util import Point, LineString, Polygon
 
 _endian_flag = 1 if _platform_is_le else 0
 
@@ -19,7 +19,6 @@ class WKBGeometryType(object):
     POINT = 1
     LINESTRING = 2
     POLYGON = 3
-    CIRCLE = 101  # DSE custom
 
 
 class PointType(CassandraType):
@@ -37,23 +36,6 @@ class PointType(CassandraType):
         is_little_endian = bool(_ord(byts[0]))
         point = point_le if is_little_endian else point_be
         return Point(*point.unpack_from(byts, 5))  # ofs = endian byte + int type
-
-
-class CircleType(CassandraType):
-    typename = 'CircleType'
-
-    _platform_circle = circle_le if _platform_is_le else circle_be
-    _type = struct.pack('=BI', _endian_flag, WKBGeometryType.CIRCLE)
-
-    @staticmethod
-    def serialize(val, protocol_version):
-        return CircleType._type + CircleType._platform_circle.pack(val.x, val.y, val.r)
-
-    @staticmethod
-    def deserialize(byts, protocol_version):
-        is_little_endian = bool(_ord(byts[0]))
-        circle = circle_le if is_little_endian else circle_be
-        return Circle(*circle.unpack_from(byts, 5))
 
 
 class LineStringType(CassandraType):
