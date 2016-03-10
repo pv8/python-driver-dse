@@ -192,10 +192,10 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         @test_category dse graph
         """
-        results = self.session.execute_graph('''import org.apache.cassandra.db.marshal.geometry.Point;
-                                    Schema schema = graph.schema();
-                                    schema.buildVertexLabel('PointV').add();
-                                    schema.buildPropertyKey('pointP', Point.class).add();''')
+        self.session.execute_graph('''import org.apache.cassandra.db.marshal.geometry.Point;
+                                      Schema schema = graph.schema();
+                                      schema.buildVertexLabel('PointV').add();
+                                      schema.buildPropertyKey('pointP', Point.class).add();''')
         rs = self.session.execute_graph('''g.addV(label, 'PointV', 'pointP', 'POINT(0 1)');''')
         # if result set is not parsed correctly this will throw an exception
         self.assertIsNotNone(rs)
@@ -224,6 +224,83 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         for edge in rs:
             edge_result = edge.as_edge()
             self._validate_classic_edge_return_type(edge_result)
+
+    def test_vertex_multiple_properties(self):
+        """
+        Test verifying vertex property form for various Cardinality
+
+        All key types are encoded as a list, regardless of cardinality
+
+        Single cardinality properties have only one value -- the last one added
+
+        Default is single (this is config dependent)
+
+        @since 1.0.0
+        @jira_ticket PYTHON-487
+
+        @test_category dse graph
+        """
+        s = self.session
+        s.execute_graph('''Schema schema = graph.schema();
+                           schema.buildPropertyKey('mult_key', String.class).cardinality(Cardinality.Multiple).add();
+                           schema.buildPropertyKey('single_key', String.class).cardinality(Cardinality.Single).add();''')
+
+        # multiple_with_one_value
+        res = s.execute_graph("graph.addVertex('mult_key', 'value')")[0]
+        self.assertEqual(len(res.properties), 1)
+        self.assertEqual(len(res.properties['mult_key']), 1)
+        v = res.as_vertex()
+        self.assertEqual(v.properties['mult_key'][0].value, 'value')
+
+        # multiple_with_two_values
+        res = s.execute_graph("graph.addVertex('mult_key', 'value0', 'mult_key', 'value1')")[0]
+        self.assertEqual(len(res.properties), 1)
+        self.assertEqual(len(res.properties['mult_key']), 2)
+        v = res.as_vertex()
+        self.assertEqual(v.properties['mult_key'][0].value, 'value0')
+        self.assertEqual(v.properties['mult_key'][1].value, 'value1')
+
+        # single_with_one_value
+        res = s.execute_graph("graph.addVertex('single_key', 'value')")[0]
+        self.assertEqual(len(res.properties), 1)
+        self.assertEqual(len(res.properties['single_key']), 1)
+        v = res.as_vertex()
+        self.assertEqual(v.properties['single_key'][0].value, 'value')
+
+        # single_with_two_values
+        res = s.execute_graph("graph.addVertex('single_key', 'value0', 'single_key', 'value1')")[0]
+        self.assertEqual(len(res.properties), 1)
+        self.assertEqual(len(res.properties['single_key']), 1)
+        v = res.as_vertex()
+        self.assertEqual(v.properties['single_key'][0].value, 'value1')
+
+        # default_with_two_values
+        res = s.execute_graph("graph.addVertex('default_key', 'value0', 'default_key', 'value1')")[0]
+        self.assertEqual(len(res.properties), 1)
+        self.assertEqual(len(res.properties['default_key']), 1)
+        v = res.as_vertex()
+        self.assertEqual(v.properties['default_key'][0].value, 'value1')
+
+    def test_vertex_property_properties(self):
+        """
+        Test verifying vertex property properties
+
+        @since 1.0.0
+        @jira_ticket PYTHON-487
+
+        @test_category dse graph
+        """
+        s = self.session
+
+        res = s.execute_graph('''v = graph.addVertex()
+                                 v.property('key', 'value', 'k0', 'v0', 'k1', 'v1')
+                                 v''')[0]
+        self.assertEqual(len(res.properties), 1)
+        self.assertEqual(len(res.properties['key']), 1)
+        v = res.as_vertex()
+        p = v.properties['key'][0]
+        self.assertEqual(p.value, 'value')
+        self.assertEqual(p.properties, {'k0': 'v0', 'k1': 'v1'})
 
     def test_statement_graph_options(self):
         s = self.session
