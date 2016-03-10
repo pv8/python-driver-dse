@@ -186,13 +186,33 @@ class Vertex(Element):
 
     @staticmethod
     def _extract_properties(properties):
-        # I have no idea why these properties are in a dict in a single-item list :-/
-        return dict((k, v[0]['value']) for k, v in properties.items())
+        # vertex properties are always encoded as a list, regardless of Cardinality
+        return dict((k, [VertexProperty(p['value'], p.get('properties')) for p in v]) for k, v in properties.items())
 
     def __repr__(self):
         return "%s(%r, %r, %r, %r)" % (self.__class__.__name__,
                                        self.id, self.label,
                                        self.type, dict((k, [{'value': v}]) for k, v in self.properties.items()))  # reproduce the server-sent structure O_o
+
+
+class VertexProperty(object):
+
+    value = None
+    """
+    Value of the property
+    """
+
+    properties = None
+    """
+    dict of named properties attached to the property
+    """
+
+    def __init__(self, value, properties=None):
+        self.value = value
+        self.properties = properties or {}
+
+    def __repr__(self):
+        return "%s(%r, %r)" % (self.__class__.__name__, self.value, self.properties)
 
 
 class Edge(Element):
