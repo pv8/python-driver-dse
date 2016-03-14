@@ -89,10 +89,31 @@ def single_object_row_factory(column_names, rows):
 
 def graph_result_row_factory(column_names, rows):
     """
-    Returns an object that can load graph results and produce specific types.
+    Returns a :class:`dse.graph.Result` object that can load graph results and produce specific types.
     The Result JSON is deserialized and unpacked from the top-level 'result' dict.
     """
     return [Result(json.loads(row[0])['result']) for row in rows]
+
+
+def graph_object_row_factory(column_names, rows):
+    """
+    Like :func:`~.graph_result_row_factory`, except known element types are converted to their simplified
+    objects. Some low-level metadata is shed in this conversion. Unknown result types are
+    still returned as :class:`dse.graph.Result`.
+    """
+    return _graph_object_sequence(json.loads(row[0])['result'] for row in rows)
+
+
+def _graph_object_sequence(objects):
+    for o in objects:
+        res = Result(o)
+        if isinstance(o, dict):
+            typ = res.value.get('type')
+            if typ == 'vertex':
+                res = res.as_vertex()
+            elif typ == 'edge':
+                res = res.as_edge()
+        yield res
 
 
 class Result(object):
@@ -216,6 +237,7 @@ class VertexProperty(object):
 
 
 class Edge(Element):
+
     element_type = 'edge'
 
     _attrs = Element._attrs + ('inV', 'inVLabel', 'outV', 'outVLabel')
@@ -241,7 +263,7 @@ class Path(object):
 
     def __init__(self, labels, objects):
         self.labels = labels
-        self.objects = [Result(o) for o in objects]
+        self.objects = list(_graph_object_sequence(objects))
 
     def __eq__(self, other):
         return self.labels == other.labels and self.objects == other.objects

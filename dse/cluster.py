@@ -5,7 +5,7 @@ import six
 
 from cassandra.cluster import Cluster, Session
 import dse.cqltypes  # unsued here, imported to cause type registration
-from dse.graph import GraphOptions, SimpleGraphStatement, graph_result_row_factory
+from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory
 from dse.util import Point, LineString, Polygon
 
 
@@ -44,7 +44,7 @@ class Session(Session):
     See dse.graph.GraphOptions
     """
 
-    default_graph_row_factory = staticmethod(graph_result_row_factory)
+    default_graph_row_factory = staticmethod(graph_object_row_factory)
     """
     Row factory used for graph results.
     The default is dse.graph.graph_result_row_factory.

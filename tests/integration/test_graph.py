@@ -7,7 +7,8 @@ import json
 from cassandra import OperationTimedOut
 from cassandra.protocol import ServerError
 from cassandra.query import QueryTrace
-from dse.graph import SimpleGraphStatement, graph_result_row_factory, Result, single_object_row_factory
+from dse.graph import (SimpleGraphStatement, graph_object_row_factory, single_object_row_factory,\
+                       graph_result_row_factory, Result, Edge, Vertex, Path)
 
 
 def setup_module():
@@ -118,8 +119,9 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         self.session.execute_graph(query_to_run)
         rs = self.session.execute_graph("g.E().range(0,10)")
         self.assertFalse(rs.has_more_pages)
-        self.assertEqual(len(rs.current_rows), 10)
-        for result in rs:
+        results = list(rs)
+        self.assertEqual(len(results), 10)
+        for result in results:
             self._validate_line_edge(result)
 
     def test_result_types(self):
@@ -131,9 +133,9 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         @expected_result edge/vertex result types should be unpacked correctly.
         @test_category dse graph
         """
-        self._generate_multi_field_graph()
+        self._generate_multi_field_graph()  # TODO: we could just make a single vertex with properties of all types, or even a simple query that just uses a sequence of groovy expressions
 
-        rs = self.session.execute_graph("g.V()")
+        rs = self.session.execute_graph("g.V()", row_factory=graph_result_row_factory)  # requires simplified row factory to avoid shedding id/~type information used for validation below
 
         for result in rs:
             self._validate_type(result)
@@ -153,7 +155,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         self._generate_large_complex_graph(5000)
         rs = self.session.execute_graph("g.V()")
         for result in rs:
-            self._validate_generic_vertex_values_exist(result)
+            self._validate_generic_vertex_result_type(result)
 
     def test_parameter_passing(self):
         """
@@ -214,16 +216,14 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         """
         self._generate_classic()
         rs = list(self.session.execute_graph('g.V()'))
-        self.assertGreater(len(rs),0, "Result set was empty this was not expected")
-        for vertex in rs:
-            vertex_result = vertex.as_vertex()
-            self._validate_classic_vertex_return_type(vertex_result)
+        self.assertGreater(len(rs), 0, "Result set was empty this was not expected")
+        for v in rs:
+            self._validate_classic_vertex(v)
 
         rs = list(self.session.execute_graph('g.E()'))
-        self.assertGreater(len(rs),0, "Result set was empty this was not expected")
-        for edge in rs:
-            edge_result = edge.as_edge()
-            self._validate_classic_edge_return_type(edge_result)
+        self.assertGreater(len(rs), 0, "Result set was empty this was not expected")
+        for e in rs:
+            self._validate_classic_edge(e)
 
     def test_vertex_multiple_properties(self):
         """
@@ -246,39 +246,34 @@ class BasicGraphTest(BasicGraphUnitTestCase):
                            schema.buildPropertyKey('single_key', String.class).cardinality(Cardinality.Single).add();''')
 
         # multiple_with_one_value
-        res = s.execute_graph("graph.addVertex('mult_key', 'value')")[0]
-        self.assertEqual(len(res.properties), 1)
-        self.assertEqual(len(res.properties['mult_key']), 1)
-        v = res.as_vertex()
+        v = s.execute_graph("graph.addVertex('mult_key', 'value')")[0]
+        self.assertEqual(len(v.properties), 1)
+        self.assertEqual(len(v.properties['mult_key']), 1)
         self.assertEqual(v.properties['mult_key'][0].value, 'value')
 
         # multiple_with_two_values
-        res = s.execute_graph("graph.addVertex('mult_key', 'value0', 'mult_key', 'value1')")[0]
-        self.assertEqual(len(res.properties), 1)
-        self.assertEqual(len(res.properties['mult_key']), 2)
-        v = res.as_vertex()
+        v = s.execute_graph("graph.addVertex('mult_key', 'value0', 'mult_key', 'value1')")[0]
+        self.assertEqual(len(v.properties), 1)
+        self.assertEqual(len(v.properties['mult_key']), 2)
         self.assertEqual(v.properties['mult_key'][0].value, 'value0')
         self.assertEqual(v.properties['mult_key'][1].value, 'value1')
 
         # single_with_one_value
-        res = s.execute_graph("graph.addVertex('single_key', 'value')")[0]
-        self.assertEqual(len(res.properties), 1)
-        self.assertEqual(len(res.properties['single_key']), 1)
-        v = res.as_vertex()
+        v = s.execute_graph("graph.addVertex('single_key', 'value')")[0]
+        self.assertEqual(len(v.properties), 1)
+        self.assertEqual(len(v.properties['single_key']), 1)
         self.assertEqual(v.properties['single_key'][0].value, 'value')
 
         # single_with_two_values
-        res = s.execute_graph("graph.addVertex('single_key', 'value0', 'single_key', 'value1')")[0]
-        self.assertEqual(len(res.properties), 1)
-        self.assertEqual(len(res.properties['single_key']), 1)
-        v = res.as_vertex()
+        v = s.execute_graph("graph.addVertex('single_key', 'value0', 'single_key', 'value1')")[0]
+        self.assertEqual(len(v.properties), 1)
+        self.assertEqual(len(v.properties['single_key']), 1)
         self.assertEqual(v.properties['single_key'][0].value, 'value1')
 
         # default_with_two_values
-        res = s.execute_graph("graph.addVertex('default_key', 'value0', 'default_key', 'value1')")[0]
-        self.assertEqual(len(res.properties), 1)
-        self.assertEqual(len(res.properties['default_key']), 1)
-        v = res.as_vertex()
+        v = s.execute_graph("graph.addVertex('default_key', 'value0', 'default_key', 'value1')")[0]
+        self.assertEqual(len(v.properties), 1)
+        self.assertEqual(len(v.properties['default_key']), 1)
         self.assertEqual(v.properties['default_key'][0].value, 'value1')
 
     def test_vertex_property_properties(self):
@@ -292,12 +287,11 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         """
         s = self.session
 
-        res = s.execute_graph('''v = graph.addVertex()
+        v = s.execute_graph('''v = graph.addVertex()
                                  v.property('key', 'value', 'k0', 'v0', 'k1', 'v1')
                                  v''')[0]
-        self.assertEqual(len(res.properties), 1)
-        self.assertEqual(len(res.properties['key']), 1)
-        v = res.as_vertex()
+        self.assertEqual(len(v.properties), 1)
+        self.assertEqual(len(v.properties['key']), 1)
         p = v.properties['key'][0]
         self.assertEqual(p.value, 'value')
         self.assertEqual(p.properties, {'k0': 'v0', 'k1': 'v1'})
@@ -358,7 +352,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         s = self.session
 
         # default Results
-        self.assertEqual(s.default_graph_row_factory, graph_result_row_factory)
+        self.assertEqual(s.default_graph_row_factory, graph_object_row_factory)
         result = s.execute_graph("123")[0]
         self.assertIsInstance(result, Result)
         self.assertEqual(result.value, 123)
@@ -369,24 +363,16 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         self.assertEqual(json.loads(rs[0]), {'result': 123})
 
     def _validate_type(self, vertex):
-        values = vertex.properties.values()
-        for value in values:
-            type_indicator = value[0].get('id').get('~type')
-            if type_indicator.startswith('int'):
-                actual_value = value[0].get('value')
-                self.assertTrue(isinstance(actual_value, int))
-            elif type_indicator.startswith('short'):
-                actual_value = value[0].get('value')
-                self.assertTrue(isinstance(actual_value, int))
-            elif type_indicator.startswith('long'):
-                actual_value = value[0].get('value')
-                self.assertTrue(isinstance(actual_value, int))
-            elif type_indicator.startswith('float'):
-                actual_value = value[0].get('value')
-                self.assertTrue(isinstance(actual_value, float))
-            elif type_indicator.startswith('double'):
-                actual_value = value[0].get('value')
-                self.assertTrue(isinstance(actual_value, float))
+        for properties in vertex.properties.values():
+            prop = properties[0]
+            type_indicator = prop['id']['~type']
+            if any(type_indicator.startswith(t) for t in ('int', 'short', 'long')):
+                typ = int
+            elif any(type_indicator.startswith(t) for t in ('float', 'double')):
+                typ = float
+            else:
+                self.fail("Received unexpected type: %s" % type_indicator)
+            self.assertIsInstance(prop['value'], typ)
 
     def _validate_classic_vertex(self, vertex):
         vertex_props = vertex.properties.keys()
@@ -394,74 +380,46 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         self.assertIn('name', vertex_props)
         self.assertTrue('lang' in vertex_props or 'age' in vertex_props)
 
-    def _validate_classic_vertex_return_type(self, vertex_obj):
-        self._validate_generic_vertex_result_type(vertex_obj)
-        vertex_props = vertex_obj.properties
+    def _validate_classic_vertex_return_type(self, vertex):
+        self._validate_generic_vertex_result_type(vertex)
+        vertex_props = vertex.properties
         self.assertIn('name', vertex_props)
         self.assertTrue('lang' in vertex_props or 'age' in vertex_props)
 
-    def _validate_generic_vertex_values_exist(self, vertex):
-        value_map = vertex.value
-        self.assertIn('properties', value_map)
-        self.assertIn('type', value_map)
-        self.assertIn('id', value_map)
-        self.assertIn('label', value_map)
-        self.assertIn('type', value_map)
-
-    def _validate_generic_vertex_result_type(self, vertex_obj):
-        self.assertIsNotNone(vertex_obj.id)
-        self.assertIsNotNone(vertex_obj.type)
-        self.assertIsNotNone(vertex_obj.label)
-        self.assertIsNotNone(vertex_obj.properties)
+    def _validate_generic_vertex_result_type(self, vertex):
+        self.assertIsInstance(vertex, Vertex)
+        for attr in ('id', 'type', 'label', 'properties'):
+            self.assertIsNotNone(getattr(vertex, attr))
 
     def _validate_classic_edge_properties(self, edge_properties):
         self.assertEqual(len(edge_properties.keys()), 1)
         self.assertIn('weight', edge_properties)
 
-    def _validate_classic_edge_return_type(self, edge_obj):
-        self._validate_generic_edge_result_type(edge_obj)
-        self._validate_classic_edge_properties(edge_obj.properties)
-
     def _validate_classic_edge(self, edge):
+        self._validate_generic_edge_result_type(edge)
         self._validate_classic_edge_properties(edge.properties)
-        self._validate_generic_edge_values_exist(edge)
 
     def _validate_line_edge(self, edge):
+        self._validate_generic_edge_result_type(edge)
         edge_props = edge.properties
         self.assertEqual(len(edge_props.keys()), 1)
         self.assertIn('distance', edge_props)
-        self._validate_generic_edge_values_exist(edge)
 
-    def _validate_generic_edge_values_exist(self, edge):
-        value_map = edge.value
-        self.assertIn('properties', value_map)
-        self.assertIn('outV', value_map)
-        self.assertIn('outVLabel', value_map)
-        self.assertIn('inV', value_map)
-        self.assertIn('inVLabel', value_map)
-        self.assertIn('label', value_map)
-        self.assertIn('type', value_map)
-        self.assertIn('id', value_map)
+    def _validate_generic_edge_result_type(self, edge):
+        self.assertIsInstance(edge, Edge)
+        for attr in ('properties', 'outV', 'outVLabel', 'inV', 'inVLabel', 'label', 'type', 'id'):
+            self.assertIsNotNone(getattr(edge, attr))
 
-    def _validate_generic_edge_result_type(self, edge_obj):
-        self.assertIsNotNone(edge_obj.properties)
-        self.assertIsNotNone(edge_obj.outV)
-        self.assertIsNotNone(edge_obj.outVLabel)
-        self.assertIsNotNone(edge_obj.inV)
-        self.assertIsNotNone(edge_obj.inVLabel)
-        self.assertIsNotNone(edge_obj.id)
-        self.assertIsNotNone(edge_obj.type)
-        self.assertIsNotNone(edge_obj.label)
-
-    def _validate_path_result_type(self, path_obj):
-        self.assertIsNotNone(path_obj.labels)
-        for object in path_obj.objects:
-            if(object.type == 'edge'):
-                self._validate_classic_edge_return_type(object)
-            elif(object.type == 'vertex'):
-                self._validate_classic_vertex_return_type(object)
+    def _validate_path_result_type(self, path):
+        self.assertIsInstance(path, Path)
+        self.assertIsNotNone(path.labels)
+        for obj in path.objects:
+            if isinstance(obj, Edge):
+                self._validate_classic_edge(obj)
+            elif isinstance(obj, Vertex):
+                self._validate_classic_vertex(obj)
             else:
-                self.fail("Invalid object found in path "+ str(object.type))
+                self.fail("Invalid object found in path " + str(object.type))
 
     def _generate_classic(self):
         to_run=['''graph.schema().buildVertexLabel('person').add()''',
