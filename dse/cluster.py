@@ -97,11 +97,9 @@ class Session(Session):
             >>> for result in results:
             ...     print(result.value)  # defaults results are dse.graph.Result
         """
-        if isinstance(query, SimpleGraphStatement):
-            options = query.options.get_options_map(self.default_graph_options)
-        else:
+        if not isinstance(query, SimpleGraphStatement):
             query = SimpleGraphStatement(query)
-            options = self.default_graph_options._graph_options
+        options = self.default_graph_options.get_options_map(query.options)
 
         graph_parameters = None
         if parameters:

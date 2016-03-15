@@ -1,5 +1,5 @@
 # Copyright 2016 DataStax, Inc.
-
+from cassandra import ConsistencyLevel
 from cassandra.query import SimpleStatement
 
 import json
@@ -32,17 +32,20 @@ class GraphOptions(object):
     def update(self, options):
         self._graph_options.update(options._graph_options)
 
-    def get_options_map(self, base_options):
+    def get_options_map(self, other_options=None):
         """
-        Returns a map for base_options updated with options set on this object, or
-        base_options map if none were set.
+        Returns a map for these options updated with other options,
+        and mapped to graph payload types.
         """
-        if self._graph_options:
-            options = base_options._graph_options.copy()
-            options.update(self._graph_options)
-            return options
-        else:
-            return base_options._graph_options
+        options = self._graph_options.copy()
+        if other_options:
+            options.update(other_options._graph_options)
+
+        for cl in ('graph-write-consistency', 'graph-read-consistency'):
+            cl_enum = options.get(cl)
+            if cl_enum is not None:
+                options[cl] = ConsistencyLevel.value_to_name[cl_enum]
+        return options
 
 
 for opt in _graph_options:
