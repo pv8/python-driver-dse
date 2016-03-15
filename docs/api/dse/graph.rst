@@ -8,7 +8,18 @@
 .. autofunction:: graph_result_row_factory
 
 .. autoclass:: GraphOptions
-   :members:
+
+   .. autoattribute:: graph_name
+
+   .. autoattribute:: graph_source
+
+   .. autoattribute:: graph_language
+
+   .. autoattribute:: graph_alias
+
+   .. autoattribute:: graph_read_consistency_level
+
+   .. autoattribute:: graph_write_consistency_level
 
 .. autoclass:: SimpleGraphStatement
    :members:
