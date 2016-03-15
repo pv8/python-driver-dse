@@ -21,6 +21,7 @@ def setup_module():
 class AbstractGeometricTypeTest():
     original_value=""
 
+
     def test_should_insert_simple(self):
         """
         This tests will attempt to insert a point, polygon, or line, using simple inline formating.
@@ -163,6 +164,20 @@ class AbstractGeometricTypeTest():
         rs=self.session.execute("SELECT k,v FROM tblpk")
         foundpk=  rs[0]._asdict()['k']
         self.assertEqual(foundpk, self.original_value)
+    def test_should_accept_as_partition_key(self):
+        """
+        This tests will attempt to insert a point, polygon, or line, as a partition key.
+        @since 1.0.0
+        @jira_ticket PYTHON-456
+        @test_category dse geometric
+        @expected_result geometric types should be able to be inserted and queried as a partition key.
+        """
+        prepared = self.session.prepare("INSERT INTO tblpk (k, v) VALUES (?, ?)")
+        bound_statement=prepared.bind((self.original_value, 1))
+        self.session.execute(bound_statement)
+        rs=self.session.execute("SELECT k,v FROM tblpk")
+        foundpk=  rs[0]._asdict()['k']
+        self.assertEqual(foundpk, self.original_value)
 
     def validate(self, value, key, expected):
         """
@@ -172,6 +187,34 @@ class AbstractGeometricTypeTest():
         retrieved=rs[0]._asdict()[value]
         self.assertEqual(expected, retrieved)
 
+    def test_insert_empty_with_string(self):
+        """
+        This tests will attempt to insert a point, polygon, or line, as Empty
+        @since 1.0.0
+        @jira_ticket PYTHON-481
+        @test_category dse geometric
+        @expected_result EMPTY as a  keyword should be honored
+        """
+        uuid_key = uuid1()
+        self.session.execute("INSERT INTO tbl (k, g) VALUES (%s, %s)",[uuid_key, self.empty_statement])
+        rs=self.session.execute("SELECT {0} from tbl where k={1}".format('g',uuid_key))
+        self.validate('g',uuid_key,self.empty_value)
+
+
+    def test_insert_empty_with_object(self):
+        """
+        This tests will attempt to insert a point, polygon, or line, as Empty
+        @since 1.0.0
+        @jira_ticket PYTHON-481
+        @test_category dse geometric
+        @expected_result EMPTY as a keyword should be used with empty objects
+        """
+        
+        uuid_key = uuid1()
+        prepared = self.session.prepare("INSERT INTO tbl (k, g) VALUES (?, ?)")
+        self.session.execute(prepared, (uuid_key, self.empty_value))
+        self.validate('g',uuid_key,self.empty_value)
+
 
 class BasicGeometricPointTypeTest(AbstractGeometricTypeTest, BasicGeometricUnitTestCase):
     """
@@ -180,6 +223,13 @@ class BasicGeometricPointTypeTest(AbstractGeometricTypeTest, BasicGeometricUnitT
     cql_type_name = "'{0}'".format(PointType.typename)
     original_value = Point(.5, .13)
 
+    @unittest.skip("Empty String")
+    def test_insert_empty_with_string(self):
+        pass
+
+    @unittest.skip("Empty String")
+    def test_insert_empty_with_object(self):
+         pass
 
 class BasicGeometricLineStringTypeTest(AbstractGeometricTypeTest, BasicGeometricUnitTestCase):
     """
@@ -187,7 +237,8 @@ class BasicGeometricLineStringTypeTest(AbstractGeometricTypeTest, BasicGeometric
     """
     cql_type_name =  cql_type_name = "'{0}'".format(LineStringType.typename)
     original_value = LineString(((1,2), (3,4), (9871234, 1235487215)))
-
+    empty_statement = 'LINESTRING EMPTY'
+    empty_value = LineString()
 
 class BasicGeometricPolygonTypeTest(AbstractGeometricTypeTest, BasicGeometricUnitTestCase):
     """
@@ -195,6 +246,8 @@ class BasicGeometricPolygonTypeTest(AbstractGeometricTypeTest, BasicGeometricUni
     """
     cql_type_name =  cql_type_name = "'{0}'".format(PolygonType.typename)
     original_value = Polygon([(10.0, 10.0), (110.0, 10.0), (110., 110.0), (10., 110.0), (10., 10.0)], [[(20., 20.0), (20., 30.0), (30., 30.0), (30., 20.0), (20., 20.0)], [(40., 20.0), (40., 30.0), (50., 30.0), (50., 20.0), (40., 20.0)]])
+    empty_statement = 'POLYGON EMPTY'
+    empty_value = Polygon()
 
 
 
