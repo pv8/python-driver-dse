@@ -7,6 +7,8 @@
 
 .. autofunction:: graph_result_row_factory
 
+.. autofunction:: graph_object_row_factory
+
 .. autoclass:: GraphOptions
    :members:
 
@@ -14,4 +16,16 @@
    :members:
 
 .. autoclass:: Result
+   :members:
+
+.. autoclass:: Vertex
+   :members:
+
+.. autoclass:: VertexProperty
+   :members:
+
+.. autoclass:: Edge
+   :members:
+
+.. autoclass:: Path
    :members:

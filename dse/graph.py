@@ -97,8 +97,8 @@ def graph_result_row_factory(column_names, rows):
 
 def graph_object_row_factory(column_names, rows):
     """
-    Like :func:`~.graph_result_row_factory`, except known element types are converted to their simplified
-    objects. Some low-level metadata is shed in this conversion. Unknown result types are
+    Like :func:`~.graph_result_row_factory`, except known element types (:class:`~.Vertex`, :class:`~.Edge`) are
+    converted to their simplified objects. Some low-level metadata is shed in this conversion. Unknown result types are
     still returned as :class:`dse.graph.Result`.
     """
     return _graph_object_sequence(json.loads(row[0])['result'] for row in rows)
@@ -203,6 +203,14 @@ class Element(object):
 
 
 class Vertex(Element):
+    """
+    Represents a Vertex element from a graph query.
+
+    Vertex ``properties`` are extracted into a ``dict`` of property names to list of :class:`~VertexProperty` (list
+    because they are always encoded that way, and sometimes have multiple cardinality; VertexProperty because sometimes
+    the properties themselves have property maps).
+    """
+
     element_type = 'vertex'
 
     @staticmethod
@@ -217,6 +225,9 @@ class Vertex(Element):
 
 
 class VertexProperty(object):
+    """
+    Vertex properties have a top-level value and an optional ``dict`` of properties.
+    """
 
     value = None
     """
@@ -225,7 +236,7 @@ class VertexProperty(object):
 
     properties = None
     """
-    dict of named properties attached to the property
+    dict of properties attached to the property
     """
 
     def __init__(self, value, properties=None):
@@ -237,6 +248,11 @@ class VertexProperty(object):
 
 
 class Edge(Element):
+    """
+    Represents an Edge element from a graph query.
+
+    Attributes match initializer parameters.
+    """
 
     element_type = 'edge'
 
@@ -260,6 +276,23 @@ class Edge(Element):
 
 
 class Path(object):
+    """
+    Represents a graph path.
+
+    Labels list is taken verbatim from the results.
+
+    Objects are either :class:`~.Result` or :class:`~.Vertex`/:class:`~.Edge` for recognized types
+    """
+
+    labels = None
+    """
+    List of labels in the path
+    """
+
+    objects = None
+    """
+    List of objects in the path
+    """
 
     def __init__(self, labels, objects):
         self.labels = labels
