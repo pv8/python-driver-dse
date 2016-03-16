@@ -219,9 +219,11 @@ class Vertex(Element):
         return dict((k, [VertexProperty(p['value'], p.get('properties')) for p in v]) for k, v in properties.items())
 
     def __repr__(self):
+        properties = dict((name, [{'value': prop.value, 'properties': prop.properties} for prop in prop_list])
+                          for name, prop_list in self.properties.items())
         return "%s(%r, %r, %r, %r)" % (self.__class__.__name__,
                                        self.id, self.label,
-                                       self.type, dict((k, [{'value': v}]) for k, v in self.properties.items()))  # reproduce the server-sent structure O_o
+                                       self.type, properties)
 
 
 class VertexProperty(object):
@@ -242,6 +244,9 @@ class VertexProperty(object):
     def __init__(self, value, properties=None):
         self.value = value
         self.properties = properties or {}
+
+    def __eq__(self, other):
+        return isinstance(other, VertexProperty) and self.value == other.value and self.properties == other.properties
 
     def __repr__(self):
         return "%s(%r, %r)" % (self.__class__.__name__, self.value, self.properties)
