@@ -93,7 +93,4 @@ class PolygonType(CassandraType):
             end = p + point_count * point.size
             rings.append([point.unpack_from(byts, offset) for offset in range(p, end, point.size)])
             p = end
-        if len(rings)>0:
-            return Polygon(exterior=rings[0], interiors=rings[1:])
-        else:
-            return Polygon()
+        return Polygon(exterior=rings[0], interiors=rings[1:]) if rings else Polygon()

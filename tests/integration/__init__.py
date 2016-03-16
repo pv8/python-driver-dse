@@ -60,6 +60,7 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
         if exists:
             s.execute_graph('system.dropGraph(name)', {'name': self.graph_name})
 
+
 class BasicGeometricUnitTestCase(BasicKeyspaceUnitTestCase):
     """
     This base test class is used by all the geomteric tests. It contains class level teardown and setup
