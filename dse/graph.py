@@ -89,10 +89,31 @@ def single_object_row_factory(column_names, rows):
 
 def graph_result_row_factory(column_names, rows):
     """
-    Returns an object that can load graph results and produce specific types.
+    Returns a :class:`dse.graph.Result` object that can load graph results and produce specific types.
     The Result JSON is deserialized and unpacked from the top-level 'result' dict.
     """
     return [Result(json.loads(row[0])['result']) for row in rows]
+
+
+def graph_object_row_factory(column_names, rows):
+    """
+    Like :func:`~.graph_result_row_factory`, except known element types (:class:`~.Vertex`, :class:`~.Edge`) are
+    converted to their simplified objects. Some low-level metadata is shed in this conversion. Unknown result types are
+    still returned as :class:`dse.graph.Result`.
+    """
+    return _graph_object_sequence(json.loads(row[0])['result'] for row in rows)
+
+
+def _graph_object_sequence(objects):
+    for o in objects:
+        res = Result(o)
+        if isinstance(o, dict):
+            typ = res.value.get('type')
+            if typ == 'vertex':
+                res = res.as_vertex()
+            elif typ == 'edge':
+                res = res.as_edge()
+        yield res
 
 
 class Result(object):
@@ -182,12 +203,20 @@ class Element(object):
 
 
 class Vertex(Element):
+    """
+    Represents a Vertex element from a graph query.
+
+    Vertex ``properties`` are extracted into a ``dict`` of property names to list of :class:`~VertexProperty` (list
+    because they are always encoded that way, and sometimes have multiple cardinality; VertexProperty because sometimes
+    the properties themselves have property maps).
+    """
+
     element_type = 'vertex'
 
     @staticmethod
     def _extract_properties(properties):
-        # I have no idea why these properties are in a dict in a single-item list :-/
-        return dict((k, v[0]['value']) for k, v in properties.items())
+        # vertex properties are always encoded as a list, regardless of Cardinality
+        return dict((k, [VertexProperty(p['value'], p.get('properties')) for p in v]) for k, v in properties.items())
 
     def __repr__(self):
         return "%s(%r, %r, %r, %r)" % (self.__class__.__name__,
@@ -195,7 +224,36 @@ class Vertex(Element):
                                        self.type, dict((k, [{'value': v}]) for k, v in self.properties.items()))  # reproduce the server-sent structure O_o
 
 
+class VertexProperty(object):
+    """
+    Vertex properties have a top-level value and an optional ``dict`` of properties.
+    """
+
+    value = None
+    """
+    Value of the property
+    """
+
+    properties = None
+    """
+    dict of properties attached to the property
+    """
+
+    def __init__(self, value, properties=None):
+        self.value = value
+        self.properties = properties or {}
+
+    def __repr__(self):
+        return "%s(%r, %r)" % (self.__class__.__name__, self.value, self.properties)
+
+
 class Edge(Element):
+    """
+    Represents an Edge element from a graph query.
+
+    Attributes match initializer parameters.
+    """
+
     element_type = 'edge'
 
     _attrs = Element._attrs + ('inV', 'inVLabel', 'outV', 'outVLabel')
@@ -218,10 +276,27 @@ class Edge(Element):
 
 
 class Path(object):
+    """
+    Represents a graph path.
+
+    Labels list is taken verbatim from the results.
+
+    Objects are either :class:`~.Result` or :class:`~.Vertex`/:class:`~.Edge` for recognized types
+    """
+
+    labels = None
+    """
+    List of labels in the path
+    """
+
+    objects = None
+    """
+    List of objects in the path
+    """
 
     def __init__(self, labels, objects):
         self.labels = labels
-        self.objects = [Result(o) for o in objects]
+        self.objects = list(_graph_object_sequence(objects))
 
     def __eq__(self, other):
         return self.labels == other.labels and self.objects == other.objects
