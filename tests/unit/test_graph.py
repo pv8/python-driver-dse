@@ -8,7 +8,7 @@ except ImportError:
 import json
 import six
 
-from dse.graph import (SimpleGraphStatement, GraphOptions, Result,
+from dse.graph import (SimpleGraphStatement, GraphOptions, Result, VertexProperty,
                        _graph_options, graph_result_row_factory, single_object_row_factory,
                        Vertex, Edge, Path)
 
@@ -77,7 +77,7 @@ class GraphResultTests(unittest.TestCase):
         for attr in required_attrs:
             self.assertEqual(getattr(vertex, attr), vertex_dict[attr])
         self.assertEqual(len(vertex.properties), 1)
-        self.assertEqual(vertex.properties[prop_name], prop_val)
+        self.assertEqual(vertex.properties[prop_name][0].value, prop_val)
 
         # no props
         modified_vertex_dict = vertex_dict.copy()
@@ -160,12 +160,8 @@ class GraphResultTests(unittest.TestCase):
         self.assertEqual(path.labels, path_dict['labels'])
 
         # make sure inner objects are bound correctly
-        for d, result in zip(path_dict['objects'], path.objects):
-            self.assertEqual(d, result.value)
-            if result.type == 'vertex':
-                self.assertIsInstance(path.objects[0].as_vertex(), Vertex)
-            else:
-                self.assertIsInstance(path.objects[1].as_edge(), Edge)
+        self.assertIsInstance(path.objects[0], Vertex)
+        self.assertIsInstance(path.objects[1], Edge)
 
         # missing required properties
         for attr in path_dict:
@@ -197,7 +193,7 @@ class GraphTypeTests(unittest.TestCase):
         kwargs = {'id': 'id_val', 'label': 'label_val', 'type': 'vertex', 'properties': {prop_name: [{'value': prop_val}]}}
         vertex = Vertex(**kwargs)
         transformed = kwargs.copy()
-        transformed['properties'] = {prop_name: prop_val}
+        transformed['properties'] = {prop_name: [VertexProperty(prop_val)]}
         self.assertEqual(eval(str(vertex)), transformed)
         self.assertEqual(eval(repr(vertex)), vertex)
 
