@@ -4,11 +4,11 @@ from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph
 
 import json
 
-from cassandra import OperationTimedOut
+from cassandra import OperationTimedOut, ConsistencyLevel
 from cassandra.protocol import ServerError
 from cassandra.query import QueryTrace
 from dse.graph import (SimpleGraphStatement, graph_object_row_factory, single_object_row_factory,\
-                       graph_result_row_factory, Result, Edge, Vertex, Path)
+                       graph_result_row_factory, Result, Edge, Vertex, Path, GraphOptions, _graph_options)
 
 
 def setup_module():
@@ -181,6 +181,49 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         for param in (None, "string", 1234, 5.678, True, False):
             result = s.execute_graph('x', {'x': param})[0]
             self.assertEqual(result.value, param)
+
+    def test_consistency_passing(self):
+        cl_attrs = ('graph_read_consistency_level', 'graph_write_consistency_level')
+        graph_params = [a[2] for a in _graph_options if a[0] in cl_attrs]
+
+        s = self.session
+        default_graph_opts = s.default_graph_options
+        try:
+            # nothing by default
+            for attr in cl_attrs:
+                self.assertIsNone(getattr(default_graph_opts, attr))
+
+            res = s.execute_graph("null")
+            for param in graph_params:
+                self.assertNotIn(param, res.response_future.message.custom_payload)
+
+            # session defaults are passed
+            opts = GraphOptions()
+            opts.update(default_graph_opts)
+            cl = {0: ConsistencyLevel.ONE, 1: ConsistencyLevel.LOCAL_QUORUM}
+            for k, v in cl.items():
+                setattr(opts, cl_attrs[k], v)
+            s.default_graph_options = opts
+
+            res = s.execute_graph("null")
+
+            for k, v in cl.items():
+                self.assertEqual(res.response_future.message.custom_payload[graph_params[k]], ConsistencyLevel.value_to_name[v])
+
+            # statement values override session defaults
+            cl = {0: ConsistencyLevel.ALL, 1: ConsistencyLevel.QUORUM}
+            sgs = SimpleGraphStatement("null")
+            for k, v in cl.items():
+                attr_name = cl_attrs[k]
+                setattr(sgs.options, attr_name, v)
+                self.assertNotEqual(getattr(s.default_graph_options, attr_name), getattr(sgs.options, attr_name))
+
+            res = s.execute_graph(sgs)
+
+            for k, v in cl.items():
+                self.assertEqual(res.response_future.message.custom_payload[graph_params[k]], ConsistencyLevel.value_to_name[v])
+        finally:
+            s.default_graph_options = default_graph_opts
 
     def test_geometric_graph_types(self):
         """

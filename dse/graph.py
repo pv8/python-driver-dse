@@ -1,5 +1,5 @@
 # Copyright 2016 DataStax, Inc.
-
+from cassandra import ConsistencyLevel
 from cassandra.query import SimpleStatement
 
 import json
@@ -9,19 +9,20 @@ import six
 _graph_options = (
     ('graph_name', 'name of the targeted graph.', 'graph-name'),
     ('graph_source', 'choose the graph traversal source, configured on the server side.', 'graph-source'),
-    ('graph_language', 'the language used in the queries (default "gremlin-groovy"', 'graph-language'),
-    ('graph_alias', 'name of the graph in the query (default "g")', 'graph-alias')
+    ('graph_language', 'the language used in the queries (default "gremlin-groovy")', 'graph-language'),
+    ('graph_alias', 'name of the graph in the query (default "g")', 'graph-alias'),
+    ('graph_read_consistency_level', '''read `cassanddra.ConsistencyLevel <http://datastax.github.io/python-driver/api/cassandra.html#cassandra.ConsistencyLevel>`_ for graph queries (if distinct from session default).
+Setting this overrides the native `Statement.consistency_level <http://datastax.github.io/python-driver/api/cassandra/query.html#cassandra.query.Statement.consistency_level>`_ for read operations from Cassandra persistence''', 'graph-read-consistency'),
+    ('graph_write_consistency_level', '''write `cassandra.ConsistencyLevel <http://datastax.github.io/python-driver/api/cassandra.html#cassandra.ConsistencyLevel>`_ for graph queries (if distinct from session default).
+Setting this overrides the native `Statement.consistency_level <http://datastax.github.io/python-driver/api/cassandra/query.html#cassandra.query.Statement.consistency_level>`_ for write operations to Cassandra persistence.''', 'graph-write-consistency')
 )
-# ^ mapped this way from early implementations where we were translating terms that could have been confusing to users
-# Now, the options have been renamed so there is less to translate (could just be '_' -> '-'. Just leaving
-# until there is an actual reason to change.
 
 
 class GraphOptions(object):
     """
     Options for DSE Graph Query handler.
-    See _graph_options map above for notes on valid options
     """
+    # See _graph_options map above for notes on valid options
 
     def __init__(self, **kwargs):
         self._graph_options = {}
@@ -31,17 +32,20 @@ class GraphOptions(object):
     def update(self, options):
         self._graph_options.update(options._graph_options)
 
-    def get_options_map(self, base_options):
+    def get_options_map(self, other_options=None):
         """
-        Returns a map for base_options updated with options set on this object, or
-        base_options map if none were set.
+        Returns a map for these options updated with other options,
+        and mapped to graph payload types.
         """
-        if self._graph_options:
-            options = base_options._graph_options.copy()
-            options.update(self._graph_options)
-            return options
-        else:
-            return base_options._graph_options
+        options = self._graph_options.copy()
+        if other_options:
+            options.update(other_options._graph_options)
+
+        for cl in ('graph-write-consistency', 'graph-read-consistency'):
+            cl_enum = options.get(cl)
+            if cl_enum is not None:
+                options[cl] = ConsistencyLevel.value_to_name[cl_enum]
+        return options
 
 
 for opt in _graph_options:
@@ -65,14 +69,14 @@ for opt in _graph_options:
 
 class SimpleGraphStatement(SimpleStatement):
     """
-    Simple graph statement for dse.cluster.Session.execute_graph.
-    Takes the same parameters as cassandra.query.SimpleStatement
+    Simple graph statement for :meth:`.Session.execute_graph`.
+    Takes the same parameters as `cassandra.query.SimpleStatement <http://datastax.github.io/python-driver/api/cassandra/query.html#cassandra.query.SimpleStatement>`_
     """
 
     options = None
     """
-    GraphOptions for this statement.
-    Any attributes set here override the GraphSession defaults.
+    :class:`~.GraphOptions` for this statement.
+    Any attributes set here override the :class:`dse.cluster.Session` defaults.
     """
 
     def __init__(self, *args, **kwargs):
