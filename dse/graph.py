@@ -47,6 +47,42 @@ class GraphOptions(object):
                 options[cl] = ConsistencyLevel.value_to_name[cl_enum]
         return options
 
+    def set_source_default(self):
+        """
+        Sets ``graph_source`` to the server-defined default traversal source ('default')
+        """
+        self.graph_source = 'default'
+
+    def set_source_analytics(self):
+        """
+        Sets ``graph_source`` to the server-defined analytic traversal source ('a')
+        """
+        self.graph_source = 'a'
+
+    def set_source_graph(self):
+        """
+        Sets ``graph_source`` to the server-defined graph traversal source ('g')
+        """
+        self.graph_source = 'g'
+
+    @property
+    def is_default_source(self):
+        return self.graph_source in ('default', None)
+
+    @property
+    def is_analytics_source(self):
+        """
+        True if ``graph_source`` is set to the server-defined analytics traversal source ('a')
+        """
+        return self.graph_source == 'a'
+
+    @property
+    def is_graph_source(self):
+        """
+        True if ``graph_source`` is set to the server-defined graph traversal source ('g')
+        """
+        return self.graph_source == 'g'
+
 
 for opt in _graph_options:
 

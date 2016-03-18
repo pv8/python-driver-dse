@@ -312,6 +312,30 @@ class GraphOptionTests(unittest.TestCase):
         self.assertEqual(opt_map['graph-read-consistency'], ConsistencyLevel.value_to_name[read_cl])
         self.assertEqual(opt_map['graph-write-consistency'], ConsistencyLevel.value_to_name[write_cl])
 
+    def test_graph_source_convenience_attributes(self):
+        opts = GraphOptions()
+        self.assertIsNone(opts.graph_source)
+        self.assertFalse(opts.is_analytics_source)
+        self.assertFalse(opts.is_graph_source)
+        self.assertTrue(opts.is_default_source)
+
+        opts.set_source_default()
+        self.assertIsNotNone(opts.graph_source)
+        self.assertFalse(opts.is_analytics_source)
+        self.assertFalse(opts.is_graph_source)
+        self.assertTrue(opts.is_default_source)
+
+        opts.set_source_analytics()
+        self.assertIsNotNone(opts.graph_source)
+        self.assertTrue(opts.is_analytics_source)
+        self.assertFalse(opts.is_graph_source)
+        self.assertFalse(opts.is_default_source)
+
+        opts.set_source_graph()
+        self.assertIsNotNone(opts.graph_source)
+        self.assertFalse(opts.is_analytics_source)
+        self.assertTrue(opts.is_graph_source)
+        self.assertFalse(opts.is_default_source)
 
 class GraphStatementTests(unittest.TestCase):
 
