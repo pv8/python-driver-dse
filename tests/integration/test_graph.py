@@ -183,13 +183,25 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             self.assertEqual(result.value, param)
 
     def test_consistency_passing(self):
+        """
+        Test to validated that graph consistency levels are properly surfaced to the base dirver
+
+        @since 1.0.0
+        @jira_ticket PYTHON-509
+        @expected_result graph consistency levels are surfaced correctly
+        @test_category dse graph
+        """
         cl_attrs = ('graph_read_consistency_level', 'graph_write_consistency_level')
+
+        # Iterates over the graph options and constructs an array containing
+        # The graph_options that correlate to graoh read and write consistency levels
         graph_params = [a[2] for a in _graph_options if a[0] in cl_attrs]
 
         s = self.session
         default_graph_opts = s.default_graph_options
         try:
-            # nothing by default
+            # Checks the default graph attributes and ensures that both  graph_read_consistency_level and graph_write_consistency_level
+            # Are None by default
             for attr in cl_attrs:
                 self.assertIsNone(getattr(default_graph_opts, attr))
 
