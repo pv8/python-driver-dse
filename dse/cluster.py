@@ -1,19 +1,30 @@
 # Copyright 2016 DataStax, Inc.
 
 import json
-import six
+import logging
 
-from cassandra.cluster import Cluster, Session
+from cassandra.cluster import Cluster, Session, default_lbp_factory
+from cassandra.query import tuple_factory
 import dse.cqltypes  # unsued here, imported to cause type registration
 from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory
+from dse.policies import HostTargetingPolicy
+from dse.query import HostTargetingStatement
 from dse.util import Point, LineString, Polygon
+
+
+log = logging.getLogger(__name__)
 
 
 class Cluster(Cluster):
     """
     Cluster extending `cassandra.cluster.Cluster <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Cluster>`_.
     The API is identical, except that it returns a :class:`dse.cluster.Session` (see below).
+    The default load_balancing_policy adds master host targeting for graph analytics queries.
     """
+    def __init__(self, *args, **kwargs):
+        if not kwargs.get('load_balancing_policy'):
+            kwargs['load_balancing_policy'] = HostTargetingPolicy(default_lbp_factory())
+        super(Cluster, self).__init__(*args, **kwargs)
 
     def _new_session(self):
         session = Session(self, self.metadata.all_hosts())
@@ -99,25 +110,51 @@ class Session(Session):
         """
         if not isinstance(query, SimpleGraphStatement):
             query = SimpleGraphStatement(query)
-        options = self.default_graph_options.get_options_map(query.options)
+        options = self.default_graph_options.copy()
+        options.update(query.options)
 
         graph_parameters = None
         if parameters:
             graph_parameters = self._transform_params(parameters)
 
-        # TODO:
-        # this is basically Session.execute_async, repeated here to customize the row factory. May want to add that
-        # parameter to the session method
         if timeout is _NOT_SET:
             timeout = self.default_graph_timeout
-        future = self._create_response_future(query, parameters=None, trace=trace, custom_payload=options, timeout=timeout)
+        future = self._create_response_future(query, parameters=None, trace=trace, custom_payload=options.get_options_map(), timeout=timeout)
         future.message._query_params = graph_parameters
         future._protocol_handler = self.client_protocol_handler
         future.row_factory = row_factory or self.default_graph_row_factory
-        future.send_request()
+
+        if options.is_analytics_source and isinstance(self._load_balancer, HostTargetingPolicy):
+            self._target_analytics_master(future)
+        else:
+            future.send_request()
         return future.result()
 
     def _transform_params(self, parameters):
         if not isinstance(parameters, dict):
             raise ValueError('The parameters must be a dictionary. Unnamed parameters are not allowed.')
         return [json.dumps(parameters).encode('utf-8')]
+
+    def _target_analytics_master(self, future):
+        future._start_timer()
+        master_query_future = self._create_response_future("CALL DseClientTool.getAnalyticsGraphServer()",
+                                                           parameters=None, trace=False,
+                                                           custom_payload=None, timeout=future.timeout)
+        master_query_future.row_factory = tuple_factory
+        master_query_future.send_request()
+
+        cb = self._on_analytics_master_result
+        args = (master_query_future, future)
+        master_query_future.add_callbacks(callback=cb, callback_args=args, errback=cb, errback_args=args)
+
+    def _on_analytics_master_result(self, response, master_future, query_future):
+        try:
+            row = master_future.result()[0]
+            addr = row[0]['location'].split(':')[0]
+            targeted_query = HostTargetingStatement(query_future.query, addr)
+            query_future.query_plan = self._load_balancer.make_query_plan(self.keyspace, targeted_query)
+        except Exception:
+            log.debug("Failed querying analytics master (request might not be routed optimally). "
+                      "Make sure the session is connecting to a graph analytics datacenter.", exc_info=True)
+
+        self.submit(query_future.send_request)

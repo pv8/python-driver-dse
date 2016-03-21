@@ -29,6 +29,11 @@ class GraphOptions(object):
         for attr, value in six.iteritems(kwargs):
             setattr(self, attr, value)
 
+    def copy(self):
+        new_options = GraphOptions()
+        new_options._graph_options = self._graph_options.copy()
+        return new_options
+
     def update(self, options):
         self._graph_options.update(options._graph_options)
 
