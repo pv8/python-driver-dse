@@ -10,7 +10,6 @@ _graph_options = (
     ('graph_name', 'name of the targeted graph.', 'graph-name'),
     ('graph_source', 'choose the graph traversal source, configured on the server side.', 'graph-source'),
     ('graph_language', 'the language used in the queries (default "gremlin-groovy")', 'graph-language'),
-    ('graph_alias', 'name of the graph in the query (default "g")', 'graph-alias'),
     ('graph_read_consistency_level', '''read `cassanddra.ConsistencyLevel <http://datastax.github.io/python-driver/api/cassandra.html#cassandra.ConsistencyLevel>`_ for graph queries (if distinct from session default).
 Setting this overrides the native `Statement.consistency_level <http://datastax.github.io/python-driver/api/cassandra/query.html#cassandra.query.Statement.consistency_level>`_ for read operations from Cassandra persistence''', 'graph-read-consistency'),
     ('graph_write_consistency_level', '''write `cassandra.ConsistencyLevel <http://datastax.github.io/python-driver/api/cassandra.html#cassandra.ConsistencyLevel>`_ for graph queries (if distinct from session default).

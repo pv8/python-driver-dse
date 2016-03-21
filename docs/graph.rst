@@ -52,6 +52,6 @@ Named parameters are passed in a dict to :meth:`.cluster.Session.execute_graph`:
 Graph options can be set in the session default (as shown in the first example) or specified per statement::
 
     from dse.graph import SimpleGraphStatement
-    statement = SimpleGraphStatement('x.V()')  # this query refers to the graph by 'x' instead of the default 'g'
-    statement.options.graph_alias = 'x'
+    statement = SimpleGraphStatement('g.V()')
+    statement.options.graph_source = 'a'
     session.execute_graph(statement)
