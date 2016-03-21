@@ -46,10 +46,11 @@ class GraphOptions(object):
         if other_options:
             options.update(other_options._graph_options)
 
+        # cls are special-cased so they can be enums in the API, and names in the protocol
         for cl in ('graph-write-consistency', 'graph-read-consistency'):
             cl_enum = options.get(cl)
             if cl_enum is not None:
-                options[cl] = ConsistencyLevel.value_to_name[cl_enum]
+                options[cl] = six.b(ConsistencyLevel.value_to_name[cl_enum])
         return options
 
     def set_source_default(self):
@@ -72,21 +73,21 @@ class GraphOptions(object):
 
     @property
     def is_default_source(self):
-        return self.graph_source in ('default', None)
+        return self.graph_source in (b'default', None)
 
     @property
     def is_analytics_source(self):
         """
         True if ``graph_source`` is set to the server-defined analytics traversal source ('a')
         """
-        return self.graph_source == 'a'
+        return self.graph_source == b'a'
 
     @property
     def is_graph_source(self):
         """
         True if ``graph_source`` is set to the server-defined graph traversal source ('g')
         """
-        return self.graph_source == 'g'
+        return self.graph_source == b'g'
 
 
 for opt in _graph_options:
@@ -95,8 +96,9 @@ for opt in _graph_options:
         return self._graph_options.get(key)
 
     def set(self, value, key=opt[2]):
-        if value:
-            if not isinstance(value, six.binary_type):
+        if value is not None:
+            # normalize text here so it doesn't have to be done every time we get options map
+            if isinstance(value, six.text_type) and not isinstance(value, six.binary_type):
                 value = six.b(value)
             self._graph_options[key] = value
         else:

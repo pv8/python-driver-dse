@@ -3,6 +3,7 @@ import time
 from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph
 
 import json
+import six
 
 from cassandra import OperationTimedOut, ConsistencyLevel
 from cassandra.protocol import ServerError
@@ -208,7 +209,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             res = s.execute_graph("null")
 
             for k, v in cl.items():
-                self.assertEqual(res.response_future.message.custom_payload[graph_params[k]], ConsistencyLevel.value_to_name[v])
+                self.assertEqual(res.response_future.message.custom_payload[graph_params[k]], six.b(ConsistencyLevel.value_to_name[v]))
 
             # statement values override session defaults
             cl = {0: ConsistencyLevel.ALL, 1: ConsistencyLevel.QUORUM}
@@ -221,7 +222,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             res = s.execute_graph(sgs)
 
             for k, v in cl.items():
-                self.assertEqual(res.response_future.message.custom_payload[graph_params[k]], ConsistencyLevel.value_to_name[v])
+                self.assertEqual(res.response_future.message.custom_payload[graph_params[k]], six.b(ConsistencyLevel.value_to_name[v]))
         finally:
             s.default_graph_options = default_graph_opts
 

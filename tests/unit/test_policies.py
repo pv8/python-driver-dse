@@ -24,7 +24,7 @@ class HostTargetingPolicyTest(unittest.TestCase):
 
     def test_no_target(self):
         node_count = 4
-        hosts = range(node_count)
+        hosts = list(range(node_count))
         policy = HostTargetingPolicy(RoundRobinPolicy())
         policy.populate(Mock(metadata=ClusterMetaMock()), hosts)
         for _ in range(node_count):
@@ -33,7 +33,7 @@ class HostTargetingPolicyTest(unittest.TestCase):
 
     def test_status_updates(self):
         node_count = 4
-        hosts = range(node_count)
+        hosts = list(range(node_count))
         policy = HostTargetingPolicy(RoundRobinPolicy())
         policy.populate(Mock(metadata=ClusterMetaMock()), hosts)
         policy.on_down(0)
@@ -56,7 +56,7 @@ class HostTargetingPolicyTest(unittest.TestCase):
 
     def test_target_no_host(self):
         node_count = 4
-        hosts = range(node_count)
+        hosts = list(range(node_count))
         policy = HostTargetingPolicy(RoundRobinPolicy())
         policy.populate(Mock(metadata=ClusterMetaMock()), hosts)
         query_plan = list(policy.make_query_plan(None, Mock(target_host='127.0.0.1')))
