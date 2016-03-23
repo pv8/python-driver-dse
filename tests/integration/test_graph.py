@@ -1,6 +1,6 @@
 # Copyright 2016 DataStax, Inc.
 import time
-from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph
+from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph, use_singledc_wth_graph, generate_classic
 
 import json
 import six
@@ -34,7 +34,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         @test_category dse graph
         """
 
-        self._generate_classic()
+        generate_classic(self.session)
         rs = self.session.execute_graph('''g.V().has('name','marko').out('knows').values('name')''')
         self.assertFalse(rs.has_more_pages)
         results_list = [result.value for result in rs.current_rows]
@@ -56,7 +56,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         @test_category dse graph
         """
-        self._generate_classic()
+        generate_classic(self.session)
         rs = self.session.execute_graph('g.V()')
         for vertex in rs:
             self._validate_classic_vertex(vertex)
@@ -74,7 +74,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         @expected_result path object should be unpacked correctly including all nested edges and verticies
         @test_category dse graph
         """
-        self._generate_classic()
+        generate_classic(self.session)
 
         rs = self.session.execute_graph("g.V().hasLabel('person').has('name', 'marko').as('a')" +
             ".outE('knows').inV().as('c', 'd').outE('created').as('e', 'f', 'g').inV().path()");
@@ -97,9 +97,9 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         @test_category dse graph
         """
-        query_to_run = self._generate_line_graph(900)
+        query_to_run = self._generate_line_graph(250)
         self.session.execute_graph(query_to_run)
-        query_to_run = self._generate_line_graph(950)
+        query_to_run = self._generate_line_graph(300)
         self.assertRaises(ServerError, self.session.execute_graph, query_to_run)
 
     def test_range_query(self):
@@ -116,7 +116,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         @test_category dse graph
         """
-        query_to_run = self._generate_line_graph(900)
+        query_to_run = self._generate_line_graph(250)
         self.session.execute_graph(query_to_run)
         rs = self.session.execute_graph("g.E().range(0,10)")
         self.assertFalse(rs.has_more_pages)
@@ -270,7 +270,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         @test_category dse graph
         """
-        self._generate_classic()
+        generate_classic(self.session)
         rs = list(self.session.execute_graph('g.V()'))
         self.assertGreater(len(rs), 0, "Result set was empty this was not expected")
         for v in rs:
@@ -477,29 +477,6 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             else:
                 self.fail("Invalid object found in path " + str(object.type))
 
-    def _generate_classic(self):
-        to_run=['''graph.schema().buildVertexLabel('person').add()''',
-                '''graph.schema().buildVertexLabel('software').add()''',
-                '''graph.schema().buildEdgeLabel('created').add()''',
-                '''graph.schema().buildPropertyKey('name', String.class).add()''',
-                '''graph.schema().buildPropertyKey('age', Integer.class).add()''',
-                '''graph.schema().buildPropertyKey('lang', String.class).add()''',
-                '''graph.schema().buildPropertyKey('weight', Float.class).add()''',
-                '''Vertex marko = graph.addVertex(label, 'person', 'name', 'marko', 'age', 29);
-                Vertex vadas = graph.addVertex(label, 'person', 'name', 'vadas', 'age', 27);
-                Vertex lop = graph.addVertex(label, 'software', 'name', 'lop', 'lang', 'java');
-                Vertex josh = graph.addVertex(label, 'person', 'name', 'josh', 'age', 32);
-                Vertex ripple = graph.addVertex(label, 'software', 'name', 'ripple', 'lang', 'java');
-                Vertex peter = graph.addVertex(label, 'person', 'name', 'peter', 'age', 35);
-                marko.addEdge('knows', vadas, 'weight', 0.5f);
-                marko.addEdge('knows', josh, 'weight', 1.0f);
-                marko.addEdge('created', lop, 'weight', 0.4f);
-                josh.addEdge('created', ripple, 'weight', 1.0f);
-                josh.addEdge('created', lop, 'weight', 0.4f);
-                peter.addEdge('created', lop, 'weight', 0.2f);''']
-
-        for run in to_run:
-            self.session.execute_graph(run)
 
     def _generate_line_graph(self, length):
         query_parts = []
