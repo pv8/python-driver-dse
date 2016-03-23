@@ -17,8 +17,6 @@
 
    .. autoattribute:: graph_language
 
-   .. autoattribute:: graph_alias
-
    .. autoattribute:: graph_read_consistency_level
 
    .. autoattribute:: graph_write_consistency_level

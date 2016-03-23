@@ -366,12 +366,6 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         del statement.options.graph_name
         self.assertTrue(s.execute_graph(statement)[0].value)
 
-        # set a different alias
-        statement = SimpleGraphStatement("x.V()")
-        self.assertRaises(ServerError, s.execute_graph, statement)
-        statement.options.graph_alias = 'x'
-        s.execute_graph(statement)
-
     def test_execute_graph_timeout(self):
         s = self.session
 
