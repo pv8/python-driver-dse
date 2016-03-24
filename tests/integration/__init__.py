@@ -6,22 +6,55 @@ except ImportError:
     import unittest  # noqa
 
 import os
+import time
 from os.path import expanduser
-from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnitTestCase, drop_keyspace_shutdown_cluster
-from integration import teardown_package as base_teardown
-from dse.cluster import Cluster
 
-from integration import use_single_node
+from ccmlib import common
+
+from dse.cluster import Cluster
+from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnitTestCase, drop_keyspace_shutdown_cluster, get_cluster, teardown_package as base_teardown
+from integration import use_single_node, use_singledc
+from cassandra.protocol import ServerError
+
 home = expanduser('~')
 
 # Home directory of the Embedded Apache Directory Server to use
 ADS_HOME = os.getenv('ADS_HOME', home)
 
+
+def find_spark_master():
+
+    CCM_CLUSTER = get_cluster()
+    # Itterate over the nodes the one with port 7080 open is the spark master
+    for node in CCM_CLUSTER.nodelist():
+        binary_itf = node.network_interfaces['binary']
+        ip=binary_itf[0]
+        port=7080
+        spark_master_itf=(ip,port)
+        if common.check_socket_listening(spark_master_itf, timeout=3):
+            return spark_master_itf[0]
+    return None
+
+
 def teardown_package():
     base_teardown()
 
-def use_single_node_with_graph(start=True, workloads=[]):
+
+def use_single_node_with_graph(start=True):
     use_single_node(start=start, workloads=['graph'])
+
+
+def use_single_node_with_graph_and_spark(start=True):
+    use_single_node(start=start, workloads=['graph', 'spark'])
+
+
+def use_singledc_wth_graph(start=True):
+    use_singledc(start=start, workloads=['graph'])
+
+
+def use_singledc_wth_graph_and_spark(start=True):
+    use_singledc(start=start, workloads=['graph', 'spark'])
+
 
 class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
     """
@@ -49,7 +82,27 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
 
     def reset_graph(self):
         self.drop_graph()
+        self.wait_for_graph_dropped()
         self.session.execute_graph('system.createGraph(name).build()', {'name': self.graph_name})
+        self.wait_for_graph_inserted()
+
+    def wait_for_graph_dropped(self):
+        count = 0
+        exists = self.session.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
+        while exists and count < 50:
+            time.sleep(1)
+            exists = self.session.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
+
+        return exists
+
+    def wait_for_graph_inserted(self):
+        count = 0
+        exists = self.session.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
+        while not exists and count < 50:
+            time.sleep(1)
+            exists = self.session.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
+
+        return exists
 
     def drop_graph(self):
         s = self.session
@@ -95,3 +148,41 @@ class BasicGeometricUnitTestCase(BasicKeyspaceUnitTestCase):
         cls.session.execute(large_table)
         cls.session.execute(simple_table)
         cls.session.execute(cluster_table)
+
+
+def generate_classic(session):
+        to_run = ['''graph.schema().buildVertexLabel('person').add()''',
+                '''graph.schema().buildVertexLabel('software').add()''',
+                '''graph.schema().buildEdgeLabel('created').add()''',
+                '''graph.schema().buildPropertyKey('name', String.class).add()''',
+                '''graph.schema().buildPropertyKey('age', Integer.class).add()''',
+                '''graph.schema().buildPropertyKey('lang', String.class).add()''',
+                '''graph.schema().buildPropertyKey('weight', Float.class).add()''',
+                '''Vertex marko = graph.addVertex(label, 'person', 'name', 'marko', 'age', 29);
+                Vertex vadas = graph.addVertex(label, 'person', 'name', 'vadas', 'age', 27);
+                Vertex lop = graph.addVertex(label, 'software', 'name', 'lop', 'lang', 'java');
+                Vertex josh = graph.addVertex(label, 'person', 'name', 'josh', 'age', 32);
+                Vertex ripple = graph.addVertex(label, 'software', 'name', 'ripple', 'lang', 'java');
+                Vertex peter = graph.addVertex(label, 'person', 'name', 'peter', 'age', 35);
+                marko.addEdge('knows', vadas, 'weight', 0.5f);
+                marko.addEdge('knows', josh, 'weight', 1.0f);
+                marko.addEdge('created', lop, 'weight', 0.4f);
+                josh.addEdge('created', ripple, 'weight', 1.0f);
+                josh.addEdge('created', lop, 'weight', 0.4f);
+                peter.addEdge('created', lop, 'weight', 0.2f);''']
+
+        for run in to_run:
+            succeed = False
+            count = 0;
+            # Retry up to 10 times this is an issue for
+            # Graph Mult-NodeClusters
+            while count < 10 and not succeed:
+                try:
+                    session.execute_graph(run)
+                    succeed = True
+                except (ServerError):
+                    pass
+
+
+
+
