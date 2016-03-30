@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>dse.graph &mdash; DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a1 documentation</title>
+    <title>dse.graph &mdash; DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a2 documentation</title>
     
     <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '1.0.0a1',
+        VERSION:     '1.0.0a2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a1 documentation" href="../../index.html" />
+    <link rel="top" title="DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a2 documentation" href="../../index.html" />
     <link rel="up" title="Module code" href="../index.html" /> 
   </head>
   <body role="document">
@@ -36,7 +36,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a1 documentation</a> &raquo;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a2 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>
@@ -65,7 +65,7 @@
             
   <h1>Source code for dse.graph</h1><div class="highlight"><pre>
 <span class="c"># Copyright 2016 DataStax, Inc.</span>
-
+<span class="kn">from</span> <span class="nn">cassandra</span> <span class="kn">import</span> <span class="n">ConsistencyLevel</span>
 <span class="kn">from</span> <span class="nn">cassandra.query</span> <span class="kn">import</span> <span class="n">SimpleStatement</span>
 
 <span class="kn">import</span> <span class="nn">json</span>
@@ -75,48 +75,95 @@
 <span class="n">_graph_options</span> <span class="o">=</span> <span class="p">(</span>
     <span class="p">(</span><span class="s">&#39;graph_name&#39;</span><span class="p">,</span> <span class="s">&#39;name of the targeted graph.&#39;</span><span class="p">,</span> <span class="s">&#39;graph-name&#39;</span><span class="p">),</span>
     <span class="p">(</span><span class="s">&#39;graph_source&#39;</span><span class="p">,</span> <span class="s">&#39;choose the graph traversal source, configured on the server side.&#39;</span><span class="p">,</span> <span class="s">&#39;graph-source&#39;</span><span class="p">),</span>
-    <span class="p">(</span><span class="s">&#39;graph_language&#39;</span><span class="p">,</span> <span class="s">&#39;the language used in the queries (default &quot;gremlin-groovy&quot;&#39;</span><span class="p">,</span> <span class="s">&#39;graph-language&#39;</span><span class="p">),</span>
-    <span class="p">(</span><span class="s">&#39;graph_alias&#39;</span><span class="p">,</span> <span class="s">&#39;name of the graph in the query (default &quot;g&quot;)&#39;</span><span class="p">,</span> <span class="s">&#39;graph-alias&#39;</span><span class="p">)</span>
+    <span class="p">(</span><span class="s">&#39;graph_language&#39;</span><span class="p">,</span> <span class="s">&#39;the language used in the queries (default &quot;gremlin-groovy&quot;)&#39;</span><span class="p">,</span> <span class="s">&#39;graph-language&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s">&#39;graph_read_consistency_level&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;&#39;read `cassanddra.ConsistencyLevel &lt;http://datastax.github.io/python-driver/api/cassandra.html#cassandra.ConsistencyLevel&gt;`_ for graph queries (if distinct from session default).</span>
+<span class="s">Setting this overrides the native `Statement.consistency_level &lt;http://datastax.github.io/python-driver/api/cassandra/query.html#cassandra.query.Statement.consistency_level&gt;`_ for read operations from Cassandra persistence&#39;&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;graph-read-consistency&#39;</span><span class="p">),</span>
+    <span class="p">(</span><span class="s">&#39;graph_write_consistency_level&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;&#39;write `cassandra.ConsistencyLevel &lt;http://datastax.github.io/python-driver/api/cassandra.html#cassandra.ConsistencyLevel&gt;`_ for graph queries (if distinct from session default).</span>
+<span class="s">Setting this overrides the native `Statement.consistency_level &lt;http://datastax.github.io/python-driver/api/cassandra/query.html#cassandra.query.Statement.consistency_level&gt;`_ for write operations to Cassandra persistence.&#39;&#39;&#39;</span><span class="p">,</span> <span class="s">&#39;graph-write-consistency&#39;</span><span class="p">)</span>
 <span class="p">)</span>
-<span class="c"># ^ mapped this way from early implementations where we were translating terms that could have been confusing to users</span>
-<span class="c"># Now, the options have been renamed so there is less to translate (could just be &#39;_&#39; -&gt; &#39;-&#39;. Just leaving</span>
-<span class="c"># until there is an actual reason to change.</span>
+
 
 <div class="viewcode-block" id="GraphOptions"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.GraphOptions">[docs]</a><span class="k">class</span> <span class="nc">GraphOptions</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Options for DSE Graph Query handler.</span>
-<span class="sd">    See _graph_options map above for notes on valid options</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># See _graph_options map above for notes on valid options</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_graph_options</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="n">GraphOptions</span><span class="p">()</span>
+        <span class="n">new_options</span><span class="o">.</span><span class="n">_graph_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">new_options</span>
+
     <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_graph_options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">_graph_options</span><span class="p">)</span>
 
-<div class="viewcode-block" id="GraphOptions.get_options_map"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.GraphOptions.get_options_map">[docs]</a>    <span class="k">def</span> <span class="nf">get_options_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_options</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_options_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other_options</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns a map for base_options updated with options set on this object, or</span>
-<span class="sd">        base_options map if none were set.</span>
+<span class="sd">        Returns a map for these options updated with other options,</span>
+<span class="sd">        and mapped to graph payload types.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph_options</span><span class="p">:</span>
-            <span class="n">options</span> <span class="o">=</span> <span class="n">base_options</span><span class="o">.</span><span class="n">_graph_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_graph_options</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">options</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">base_options</span><span class="o">.</span><span class="n">_graph_options</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph_options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">other_options</span><span class="p">:</span>
+            <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">other_options</span><span class="o">.</span><span class="n">_graph_options</span><span class="p">)</span>
 
-</div></div>
+        <span class="c"># cls are special-cased so they can be enums in the API, and names in the protocol</span>
+        <span class="k">for</span> <span class="n">cl</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&#39;graph-write-consistency&#39;</span><span class="p">,</span> <span class="s">&#39;graph-read-consistency&#39;</span><span class="p">):</span>
+            <span class="n">cl_enum</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cl</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cl_enum</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">options</span><span class="p">[</span><span class="n">cl</span><span class="p">]</span> <span class="o">=</span> <span class="n">six</span><span class="o">.</span><span class="n">b</span><span class="p">(</span><span class="n">ConsistencyLevel</span><span class="o">.</span><span class="n">value_to_name</span><span class="p">[</span><span class="n">cl_enum</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">options</span>
+
+    <span class="k">def</span> <span class="nf">set_source_default</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets ``graph_source`` to the server-defined default traversal source (&#39;default&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph_source</span> <span class="o">=</span> <span class="s">&#39;default&#39;</span>
+
+    <span class="k">def</span> <span class="nf">set_source_analytics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets ``graph_source`` to the server-defined analytic traversal source (&#39;a&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph_source</span> <span class="o">=</span> <span class="s">&#39;a&#39;</span>
+
+    <span class="k">def</span> <span class="nf">set_source_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets ``graph_source`` to the server-defined graph traversal source (&#39;g&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph_source</span> <span class="o">=</span> <span class="s">&#39;g&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_default_source</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph_source</span> <span class="ow">in</span> <span class="p">(</span><span class="n">b</span><span class="s">&#39;default&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_analytics_source</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        True if ``graph_source`` is set to the server-defined analytics traversal source (&#39;a&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph_source</span> <span class="o">==</span> <span class="n">b</span><span class="s">&#39;a&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_graph_source</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        True if ``graph_source`` is set to the server-defined graph traversal source (&#39;g&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph_source</span> <span class="o">==</span> <span class="n">b</span><span class="s">&#39;g&#39;</span>
+
+</div>
 <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="n">_graph_options</span><span class="p">:</span>
 
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">opt</span><span class="p">[</span><span class="mi">2</span><span class="p">]):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph_options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">opt</span><span class="p">[</span><span class="mi">2</span><span class="p">]):</span>
-        <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">binary_type</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c"># normalize text here so it doesn&#39;t have to be done every time we get options map</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">text_type</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">binary_type</span><span class="p">):</span>
                 <span class="n">value</span> <span class="o">=</span> <span class="n">six</span><span class="o">.</span><span class="n">b</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_graph_options</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
         <span class="k">else</span><span class="p">:</span>
@@ -130,14 +177,14 @@
 
 <div class="viewcode-block" id="SimpleGraphStatement"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.SimpleGraphStatement">[docs]</a><span class="k">class</span> <span class="nc">SimpleGraphStatement</span><span class="p">(</span><span class="n">SimpleStatement</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Simple graph statement for dse.cluster.Session.execute_graph.</span>
-<span class="sd">    Takes the same parameters as cassandra.query.SimpleStatement</span>
+<span class="sd">    Simple graph statement for :meth:`.Session.execute_graph`.</span>
+<span class="sd">    Takes the same parameters as `cassandra.query.SimpleStatement &lt;http://datastax.github.io/python-driver/api/cassandra/query.html#cassandra.query.SimpleStatement&gt;`_</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">options</span> <span class="o">=</span> <span class="bp">None</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    GraphOptions for this statement.</span>
-<span class="sd">    Any attributes set here override the GraphSession defaults.</span>
+<span class="sd">    :class:`~.GraphOptions` for this statement.</span>
+<span class="sd">    Any attributes set here override the :class:`dse.cluster.Session` defaults.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -154,15 +201,37 @@
 </div>
 <div class="viewcode-block" id="graph_result_row_factory"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.graph_result_row_factory">[docs]</a><span class="k">def</span> <span class="nf">graph_result_row_factory</span><span class="p">(</span><span class="n">column_names</span><span class="p">,</span> <span class="n">rows</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Returns an object that can load graph results and produce specific types</span>
+<span class="sd">    Returns a :class:`dse.graph.Result` object that can load graph results and produce specific types.</span>
+<span class="sd">    The Result JSON is deserialized and unpacked from the top-level &#39;result&#39; dict.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">Result</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">Result</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="s">&#39;result&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
 
 </div>
+<div class="viewcode-block" id="graph_object_row_factory"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.graph_object_row_factory">[docs]</a><span class="k">def</span> <span class="nf">graph_object_row_factory</span><span class="p">(</span><span class="n">column_names</span><span class="p">,</span> <span class="n">rows</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Like :func:`~.graph_result_row_factory`, except known element types (:class:`~.Vertex`, :class:`~.Edge`) are</span>
+<span class="sd">    converted to their simplified objects. Some low-level metadata is shed in this conversion. Unknown result types are</span>
+<span class="sd">    still returned as :class:`dse.graph.Result`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_graph_object_sequence</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="s">&#39;result&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">)</span>
+
+</div>
+<span class="k">def</span> <span class="nf">_graph_object_sequence</span><span class="p">(</span><span class="n">objects</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">objects</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">Result</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">typ</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;type&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">typ</span> <span class="o">==</span> <span class="s">&#39;vertex&#39;</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">as_vertex</span><span class="p">()</span>
+            <span class="k">elif</span> <span class="n">typ</span> <span class="o">==</span> <span class="s">&#39;edge&#39;</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">as_edge</span><span class="p">()</span>
+        <span class="k">yield</span> <span class="n">res</span>
+
+
 <div class="viewcode-block" id="Result"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.Result">[docs]</a><span class="k">class</span> <span class="nc">Result</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Graph results when `graph_result_row_factory` is used.</span>
-<span class="sd">    The result json is deserialized into the value, and getters</span>
+<span class="sd">    Represents deserialized graph results.</span>
+<span class="sd">    Property and item getters are provided for convenience.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">value</span> <span class="o">=</span> <span class="bp">None</span>
@@ -170,8 +239,8 @@
 <span class="sd">    Deserialized value from the result</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json_value</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_value</span><span class="p">)[</span><span class="s">&#39;result&#39;</span><span class="p">]</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
@@ -194,10 +263,181 @@
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">(</span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Result</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s">&#39;result&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span>
+        <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">(</span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Result</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span>
+
+<div class="viewcode-block" id="Result.as_vertex"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.Result.as_vertex">[docs]</a>    <span class="k">def</span> <span class="nf">as_vertex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a :class:`Vertex` parsed from this result</span>
+
+<span class="sd">        Raises TypeError if parsing fails (i.e. the result structure is not valid).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Vertex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;properties&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;Could not create Vertex from </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="p">,))</span>
+</div>
+<div class="viewcode-block" id="Result.as_edge"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.Result.as_edge">[docs]</a>    <span class="k">def</span> <span class="nf">as_edge</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a :class:`Edge` parsed from this result</span>
+
+<span class="sd">        Raises TypeError if parsing fails (i.e. the result structure is not valid).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Edge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;properties&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">inV</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inVLabel</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outV</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outVLabel</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;Could not create Edge from </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="p">,))</span>
+</div>
+<div class="viewcode-block" id="Result.as_path"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.Result.as_path">[docs]</a>    <span class="k">def</span> <span class="nf">as_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a :class:`Path` parsed from this result</span>
+
+<span class="sd">        Raises TypeError if parsing fails (i.e. the result structure is not valid).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;Could not create Edge from </span><span class="si">%r</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="p">,))</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">Element</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="n">element_type</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="n">_attrs</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;id&#39;</span><span class="p">,</span> <span class="s">&#39;label&#39;</span><span class="p">,</span> <span class="s">&#39;type&#39;</span><span class="p">,</span> <span class="s">&#39;properties&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">properties</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&quot;Attempted to create </span><span class="si">%s</span><span class="s"> from </span><span class="si">%s</span><span class="s"> element&quot;</span><span class="p">,</span> <span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_type</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_properties</span><span class="p">(</span><span class="n">properties</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_extract_properties</span><span class="p">(</span><span class="n">properties</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">properties</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attrs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attrs</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="Vertex"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.Vertex">[docs]</a><span class="k">class</span> <span class="nc">Vertex</span><span class="p">(</span><span class="n">Element</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a Vertex element from a graph query.</span>
+
+<span class="sd">    Vertex ``properties`` are extracted into a ``dict`` of property names to list of :class:`~VertexProperty` (list</span>
+<span class="sd">    because they are always encoded that way, and sometimes have multiple cardinality; VertexProperty because sometimes</span>
+<span class="sd">    the properties themselves have property maps).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">element_type</span> <span class="o">=</span> <span class="s">&#39;vertex&#39;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_extract_properties</span><span class="p">(</span><span class="n">properties</span><span class="p">):</span>
+        <span class="c"># vertex properties are always encoded as a list, regardless of Cardinality</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="p">[</span><span class="n">VertexProperty</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s">&#39;value&#39;</span><span class="p">],</span> <span class="n">p</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;properties&#39;</span><span class="p">))</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">v</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">properties</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">properties</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="p">[{</span><span class="s">&#39;value&#39;</span><span class="p">:</span> <span class="n">prop</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s">&#39;properties&#39;</span><span class="p">:</span> <span class="n">prop</span><span class="o">.</span><span class="n">properties</span><span class="p">}</span> <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="n">prop_list</span><span class="p">])</span>
+                          <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">prop_list</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">(</span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="VertexProperty"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.VertexProperty">[docs]</a><span class="k">class</span> <span class="nc">VertexProperty</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Vertex properties have a top-level value and an optional ``dict`` of properties.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">value</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Value of the property</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">properties</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    dict of properties attached to the property</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">properties</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="n">properties</span> <span class="ow">or</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">VertexProperty</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">value</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">properties</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">(</span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Edge"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.Edge">[docs]</a><span class="k">class</span> <span class="nc">Edge</span><span class="p">(</span><span class="n">Element</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents an Edge element from a graph query.</span>
+
+<span class="sd">    Attributes match initializer parameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">element_type</span> <span class="o">=</span> <span class="s">&#39;edge&#39;</span>
+
+    <span class="n">_attrs</span> <span class="o">=</span> <span class="n">Element</span><span class="o">.</span><span class="n">_attrs</span> <span class="o">+</span> <span class="p">(</span><span class="s">&#39;inV&#39;</span><span class="p">,</span> <span class="s">&#39;inVLabel&#39;</span><span class="p">,</span> <span class="s">&#39;outV&#39;</span><span class="p">,</span> <span class="s">&#39;outVLabel&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span>
+                 <span class="n">inV</span><span class="p">,</span> <span class="n">inVLabel</span><span class="p">,</span> <span class="n">outV</span><span class="p">,</span> <span class="n">outVLabel</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Edge</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inV</span> <span class="o">=</span> <span class="n">inV</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inVLabel</span> <span class="o">=</span> <span class="n">inVLabel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outV</span> <span class="o">=</span> <span class="n">outV</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outVLabel</span> <span class="o">=</span> <span class="n">outVLabel</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">(</span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span>\
+               <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inV</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inVLabel</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">outV</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outVLabel</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="Path"><a class="viewcode-back" href="../../api/dse/graph.html#dse.cluster.Path">[docs]</a><span class="k">class</span> <span class="nc">Path</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a graph path.</span>
+
+<span class="sd">    Labels list is taken verbatim from the results.</span>
+
+<span class="sd">    Objects are either :class:`~.Result` or :class:`~.Vertex`/:class:`~.Edge` for recognized types</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">labels</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List of labels in the path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">objects</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List of objects in the path</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">objects</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">objects</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">_graph_object_sequence</span><span class="p">(</span><span class="n">objects</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">labels</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">objects</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">({</span><span class="s">&#39;labels&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="s">&#39;objects&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">})</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">(</span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="p">[</span><span class="n">o</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">objects</span><span class="p">])</span></div>
 </pre></div>
 
           </div>
@@ -214,7 +454,7 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a1 documentation</a> &raquo;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a2 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>

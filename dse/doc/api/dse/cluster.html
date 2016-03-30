@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>dse.cluster - Clusters and Sessions &mdash; DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a1 documentation</title>
+    <title>dse.cluster - Clusters and Sessions &mdash; DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a2 documentation</title>
     
     <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '1.0.0a1',
+        VERSION:     '1.0.0a2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +23,7 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a1 documentation" href="../../index.html" />
+    <link rel="top" title="DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a2 documentation" href="../../index.html" />
     <link rel="up" title="API Documentation" href="../index.html" />
     <link rel="next" title="dse.auth - Authentication" href="auth.html" />
     <link rel="prev" title="dse - Version Info" href="../dse.html" /> 
@@ -44,7 +44,7 @@
         <li class="right" >
           <a href="../dse.html" title="dse - Version Info"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a1 documentation</a> &raquo;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a2 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">API Documentation</a> &raquo;</li> 
       </ul>
     </div>
@@ -90,7 +90,8 @@
 <dt id="dse.cluster.Cluster">
 <em class="property">class </em><code class="descclassname">dse.cluster.</code><code class="descname">Cluster</code><a class="reference internal" href="../../_modules/dse/cluster.html#Cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dse.cluster.Cluster" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cluster extending <a class="reference external" href="http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Cluster">cassandra.cluster.Cluster</a>.
-The API is identical, except that it returns a <a class="reference internal" href="#dse.cluster.Session" title="dse.cluster.Session"><code class="xref py py-class docutils literal"><span class="pre">dse.cluster.Session</span></code></a> (see below).</p>
+The API is identical, except that it returns a <a class="reference internal" href="#dse.cluster.Session" title="dse.cluster.Session"><code class="xref py py-class docutils literal"><span class="pre">dse.cluster.Session</span></code></a> (see below).
+The default load_balancing_policy adds master host targeting for graph analytics queries.</p>
 </dd></dl>
 
 <dl class="class">
@@ -117,9 +118,21 @@ with additional features:</p>
 
 <dl class="attribute">
 <dt id="dse.cluster.Session.default_graph_row_factory">
-<code class="descname">default_graph_row_factory</code><em class="property"> = &lt;function graph_result_row_factory&gt;</em><a class="headerlink" href="#dse.cluster.Session.default_graph_row_factory" title="Permalink to this definition">¶</a></dt>
+<code class="descname">default_graph_row_factory</code><em class="property"> = &lt;function graph_object_row_factory&gt;</em><a class="headerlink" href="#dse.cluster.Session.default_graph_row_factory" title="Permalink to this definition">¶</a></dt>
 <dd><p>Row factory used for graph results.
 The default is dse.graph.graph_result_row_factory.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dse.cluster.Session.default_graph_timeout">
+<code class="descname">default_graph_timeout</code><em class="property"> = 32.0</em><a class="headerlink" href="#dse.cluster.Session.default_graph_timeout" title="Permalink to this definition">¶</a></dt>
+<dd><p>A default timeout (seconds) for graph queries executed with
+<a class="reference internal" href="#dse.cluster.Session.execute_graph" title="dse.cluster.Session.execute_graph"><code class="xref py py-meth docutils literal"><span class="pre">execute_graph()</span></code></a>.  This default may be overridden with the
+<cite>timeout</cite> parameter of that method.</p>
+<p>Setting this to <code class="xref py py-const docutils literal"><span class="pre">None</span></code> will cause no timeouts to be set by default.</p>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 1.0.0.</span></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -130,7 +143,7 @@ and returns a GraphResultSet from this execution.</p>
 <p><cite>parameters</cite> is dict of named parameters to bind. The values must be
 JSON-serializable.
 (TBD: make this customizable)</p>
-<p><cite>timeout</cite> and <cite>trace</cite> have the same meaning as in Session.execute.</p>
+<p><cite>timeout</cite> and <cite>trace</cite> have the same meaning as in <a class="reference external" href="http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Session.execute">Session.execute</a>.</p>
 <p><cite>row_factory</cite> defines how the results of this query are returned. If not set,
 it defaults to <a class="reference internal" href="#dse.cluster.Session.default_graph_row_factory" title="dse.cluster.Session.default_graph_row_factory"><code class="xref py py-attr docutils literal"><span class="pre">Session.default_graph_row_factory</span></code></a>.</p>
 <p>Example usage:</p>
@@ -169,7 +182,7 @@ it defaults to <a class="reference internal" href="#dse.cluster.Session.default_
         <li class="right" >
           <a href="../dse.html" title="dse - Version Info"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a1 documentation</a> &raquo;</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">DataStax Enterprise Extension for the DataStax Python Cassandra Driver 1.0.0a2 documentation</a> &raquo;</li>
           <li class="nav-item nav-item-1"><a href="../index.html" >API Documentation</a> &raquo;</li> 
       </ul>
     </div>
