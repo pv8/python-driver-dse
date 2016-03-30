@@ -203,12 +203,22 @@ class Result(object):
         return self.value == other.value
 
     def as_vertex(self):
+        """
+        Return a :class:`Vertex` parsed from this result
+
+        Raises TypeError if parsing fails (i.e. the result structure is not valid).
+        """
         try:
             return Vertex(self.id, self.label, self.type, self.value.get('properties', {}))
         except (AttributeError, ValueError, TypeError):
             raise TypeError("Could not create Vertex from %r" % (self,))
 
     def as_edge(self):
+        """
+        Return a :class:`Edge` parsed from this result
+
+        Raises TypeError if parsing fails (i.e. the result structure is not valid).
+        """
         try:
             return Edge(self.id, self.label, self.type, self.value.get('properties', {}),
                         self.inV, self.inVLabel, self.outV, self.outVLabel)
@@ -216,6 +226,11 @@ class Result(object):
             raise TypeError("Could not create Edge from %r" % (self,))
 
     def as_path(self):
+        """
+        Return a :class:`Path` parsed from this result
+
+        Raises TypeError if parsing fails (i.e. the result structure is not valid).
+        """
         try:
             return Path(self.labels, self.objects)
         except (AttributeError, ValueError, TypeError):
