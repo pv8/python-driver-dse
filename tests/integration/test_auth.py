@@ -22,8 +22,10 @@ log = logging.getLogger(__name__)
 def setup_module():
     use_single_node_with_graph()
 
+
 def teardown_module():
     remove_cluster()  # this test messes with config
+
 
 class BasicDseAuthTest(unittest.TestCase):
 

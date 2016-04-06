@@ -33,7 +33,6 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         @test_category dse graph
         """
-
         generate_classic(self.session)
         rs = self.session.execute_graph('''g.V().has('name','marko').out('knows').values('name')''')
         self.assertFalse(rs.has_more_pages)
@@ -251,10 +250,11 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         @test_category dse graph
         """
         self.session.execute_graph('''import org.apache.cassandra.db.marshal.geometry.Point;
-                                      Schema schema = graph.schema();
-                                      schema.buildVertexLabel('PointV').add();
-                                      schema.buildPropertyKey('pointP', Point.class).add();''')
+                                      schema.vertexLabel('PointV').ifNotExists().create();
+                                      schema.propertyKey('pointP').Point().ifNotExists().create();''')
+
         rs = self.session.execute_graph('''g.addV(label, 'PointV', 'pointP', 'POINT(0 1)');''')
+
         # if result set is not parsed correctly this will throw an exception
         self.assertIsNotNone(rs)
 
@@ -298,8 +298,8 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         """
         s = self.session
         s.execute_graph('''Schema schema = graph.schema();
-                           schema.buildPropertyKey('mult_key', String.class).cardinality(Cardinality.Multiple).add();
-                           schema.buildPropertyKey('single_key', String.class).cardinality(Cardinality.Single).add();''')
+                           schema.propertyKey('mult_key').Text().multiple().ifNotExists().create();
+                           schema.propertyKey('single_key').Text().single().ifNotExists().create();''')
 
         # multiple_with_one_value
         v = s.execute_graph("graph.addVertex('mult_key', 'value')")[0]
@@ -471,7 +471,6 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             else:
                 self.fail("Invalid object found in path " + str(object.type))
 
-
     def _generate_line_graph(self, length):
         query_parts = []
         for index in range(0, length):
@@ -482,7 +481,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         return final_graph_generation_statement
 
     def _generate_multi_field_graph(self):
-        to_run= ['''short s1 = 5000; graph.addVertex(label, "shortvertex", "shortvalue", s1);''',
+        to_run = ['''short s1 = 5000; graph.addVertex(label, "shortvertex", "shortvalue", s1);''',
                  '''int i1 = 1000000000; graph.addVertex(label, "intvertex", "intvalue", i1);''',
                  '''Integer i2 = 100000000; graph.addVertex(label, "intvertex2", "intvalue2", i2);''',
                  '''long l1 = 9223372036854775807; graph.addVertex(label, "longvertex", "longvalue", l1);''',
@@ -493,7 +492,6 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         for run in to_run:
             self.session.execute_graph(run)
-
 
     def _generate_large_complex_graph(self, size):
 

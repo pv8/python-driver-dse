@@ -20,19 +20,18 @@ home = expanduser('~')
 
 # Home directory of the Embedded Apache Directory Server to use
 ADS_HOME = os.getenv('ADS_HOME', home)
+MAKE_STRICT = "schema.config().option('graph.schema_mode').set(com.datastax.bdp.graph.api.model.Schema.Mode.Production)"
 
 
-def find_spark_master():
+def find_spark_master(session):
 
-    CCM_CLUSTER = get_cluster()
     # Itterate over the nodes the one with port 7080 open is the spark master
-    for node in CCM_CLUSTER.nodelist():
-        binary_itf = node.network_interfaces['binary']
-        ip=binary_itf[0]
-        port=7080
-        spark_master_itf=(ip,port)
-        if common.check_socket_listening(spark_master_itf, timeout=3):
-            return spark_master_itf[0]
+    for host in session.hosts:
+        ip = host.address
+        port = 7077
+        spark_master = (ip, port)
+        if common.check_socket_listening(spark_master, timeout=3):
+            return spark_master[0]
     return None
 
 
@@ -75,43 +74,25 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
         self.session_setup()
         self.reset_graph()
         self.session.default_graph_options.graph_name = self.graph_name
+        self.clear_schema()
 
     def tearDown(self):
-        self.drop_graph()
         self.cluster.shutdown()
 
+    def clear_schema(self):
+        self.session.execute_graph('schema.clear()')
+
     def reset_graph(self):
-        self.drop_graph()
-        self.wait_for_graph_dropped()
-        self.session.execute_graph('system.createGraph(name).build()', {'name': self.graph_name})
+        self.session.execute_graph('system.graph(name).ifNotExists().create()', {'name': self.graph_name})
         self.wait_for_graph_inserted()
-
-    def wait_for_graph_dropped(self):
-        count = 0
-        exists = self.session.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
-        while exists and count < 50:
-            time.sleep(1)
-            exists = self.session.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
-
-        return exists
 
     def wait_for_graph_inserted(self):
         count = 0
-        exists = self.session.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
+        exists = self.session.execute_graph('system.graph(name).exists()', {'name': self.graph_name})[0].value
         while not exists and count < 50:
             time.sleep(1)
-            exists = self.session.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
-
+            exists = self.session.execute_graph('system.graph(name).exists()', {'name': self.graph_name})[0].value
         return exists
-
-    def drop_graph(self):
-        s = self.session
-        # might also g.V().drop().iterate(), but that leaves some schema behind
-        # this seems most robust for now
-        self.session.default_graph_options.graph_name = None
-        exists = s.execute_graph('system.graphExists(name)', {'name': self.graph_name})[0].value
-        if exists:
-            s.execute_graph('system.dropGraph(name)', {'name': self.graph_name})
 
 
 class BasicGeometricUnitTestCase(BasicKeyspaceUnitTestCase):
@@ -151,38 +132,40 @@ class BasicGeometricUnitTestCase(BasicKeyspaceUnitTestCase):
 
 
 def generate_classic(session):
-        to_run = ['''graph.schema().buildVertexLabel('person').add()''',
-                '''graph.schema().buildVertexLabel('software').add()''',
-                '''graph.schema().buildEdgeLabel('created').add()''',
-                '''graph.schema().buildPropertyKey('name', String.class).add()''',
-                '''graph.schema().buildPropertyKey('age', Integer.class).add()''',
-                '''graph.schema().buildPropertyKey('lang', String.class).add()''',
-                '''graph.schema().buildPropertyKey('weight', Float.class).add()''',
-                '''Vertex marko = graph.addVertex(label, 'person', 'name', 'marko', 'age', 29);
-                Vertex vadas = graph.addVertex(label, 'person', 'name', 'vadas', 'age', 27);
-                Vertex lop = graph.addVertex(label, 'software', 'name', 'lop', 'lang', 'java');
-                Vertex josh = graph.addVertex(label, 'person', 'name', 'josh', 'age', 32);
-                Vertex ripple = graph.addVertex(label, 'software', 'name', 'ripple', 'lang', 'java');
-                Vertex peter = graph.addVertex(label, 'person', 'name', 'peter', 'age', 35);
-                marko.addEdge('knows', vadas, 'weight', 0.5f);
-                marko.addEdge('knows', josh, 'weight', 1.0f);
-                marko.addEdge('created', lop, 'weight', 0.4f);
-                josh.addEdge('created', ripple, 'weight', 1.0f);
-                josh.addEdge('created', lop, 'weight', 0.4f);
-                peter.addEdge('created', lop, 'weight', 0.2f);''']
-
-        for run in to_run:
-            succeed = False
-            count = 0;
-            # Retry up to 10 times this is an issue for
-            # Graph Mult-NodeClusters
-            while count < 10 and not succeed:
-                try:
-                    session.execute_graph(run)
-                    succeed = True
-                except (ServerError):
-                    pass
-
+    to_run = [MAKE_STRICT, '''schema.propertyKey('name').Text().ifNotExists().create();
+            schema.propertyKey('age').Int().ifNotExists().create();
+            schema.propertyKey('lang').Text().ifNotExists().create();
+            schema.propertyKey('weight').Float().ifNotExists().create();
+            schema.vertexLabel('person').properties('name', 'age').ifNotExists().create();
+            schema.vertexLabel('software').properties('name', 'lang').ifNotExists().create();
+            schema.edgeLabel('created').properties('weight').connection('person', 'software').ifNotExists().create();
+            schema.edgeLabel('created').connection('software', 'software').add();
+            schema.edgeLabel('knows').properties('weight').connection('person', 'person').ifNotExists().create();''',
+            '''Vertex marko = graph.addVertex(label, 'person', 'name', 'marko', 'age', 29);
+            Vertex vadas = graph.addVertex(label, 'person', 'name', 'vadas', 'age', 27);
+            Vertex lop = graph.addVertex(label, 'software', 'name', 'lop', 'lang', 'java');
+            Vertex josh = graph.addVertex(label, 'person', 'name', 'josh', 'age', 32);
+            Vertex ripple = graph.addVertex(label, 'software', 'name', 'ripple', 'lang', 'java');
+            Vertex peter = graph.addVertex(label, 'person', 'name', 'peter', 'age', 35);
+            marko.addEdge('knows', vadas, 'weight', 0.5f);
+            marko.addEdge('knows', josh, 'weight', 1.0f);
+            marko.addEdge('created', lop, 'weight', 0.4f);
+            josh.addEdge('created', ripple, 'weight', 1.0f);
+            josh.addEdge('created', lop, 'weight', 0.4f);
+            peter.addEdge('created', lop, 'weight', 0.2f);''']
+    for run in to_run:
+        succeed = False
+        count = 0
+        # Retry up to 10 times this is an issue for
+        # Graph Mult-NodeClusters
+        while count < 10 and not succeed:
+            try:
+                session.execute_graph(run)
+                succeed = True
+            except (ServerError):
+                print("error creating classic graph retrying")
+                time.sleep(.5)
+            count += 1
 
 
 
