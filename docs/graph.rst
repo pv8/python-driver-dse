@@ -8,7 +8,7 @@ graph queries over the Cassandra native protocol::
 
     # no graph_options graph_name should be set any time the system API is used
     # otherwise the request will fail
-    session.execute_graph("system.createGraph('test')")
+    session.execute_graph("system.graph('test').create()")
 
     # after we're done setting up system, we can set the default graph_name to use
     # for future queries using this session
@@ -23,7 +23,7 @@ graph queries over the Cassandra native protocol::
     # graph_name should be removed from the options passed if we need to interact with the system API again
     # DSP-8121
     del session.default_graph_options.graph_name
-    session.execute_graph("system.dropGraph('test')")
+    session.execute_graph("system.graph('test').drop()")
 
 By default (with :attr:`.Session.default_graph_row_factory` set to :func:`.graph.graph_object_row_factory`), known graph result
 types are unpacked and returned as specialized types (:class:`.Vertex`, :class:`.Edge`). If the result is not one of these
