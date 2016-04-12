@@ -234,7 +234,7 @@ class Result(object):
         try:
             return Path(self.labels, self.objects)
         except (AttributeError, ValueError, TypeError):
-            raise TypeError("Could not create Edge from %r" % (self,))
+            raise TypeError("Could not create Path from %r" % (self,))
 
 
 class Element(object):
