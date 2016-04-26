@@ -88,7 +88,7 @@ class Session(Session):
     def execute_graph(self, query, parameters=None, timeout=_NOT_SET, trace=False, row_factory=None):
         """
         Executes a Gremlin query string or SimpleGraphStatement synchronously,
-        and returns a GraphResultSet from this execution.
+        and returns a ResultSet from this execution.
 
         `parameters` is dict of named parameters to bind. The values must be
         JSON-serializable.
