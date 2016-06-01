@@ -9,6 +9,7 @@ except ImportError:
 import json
 import six
 
+from cassandra.policies import RetryPolicy
 from dse.graph import (SimpleGraphStatement, GraphOptions, Result, VertexProperty,
                        _graph_options, graph_result_row_factory, single_object_row_factory,
                        Vertex, Edge, Path)
@@ -342,7 +343,7 @@ class GraphStatementTests(unittest.TestCase):
     def test_init(self):
         # just make sure Statement attributes are accepted
         kwargs = {'query_string': object(),
-                  'retry_policy': object(),
+                  'retry_policy': RetryPolicy(),
                   'consistency_level': object(),
                   'fetch_size': object(),
                   'keyspace': object(),
