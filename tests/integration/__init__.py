@@ -20,7 +20,8 @@ home = expanduser('~')
 
 # Home directory of the Embedded Apache Directory Server to use
 ADS_HOME = os.getenv('ADS_HOME', home)
-MAKE_STRICT = "schema.config().option('graph.schema_mode').set(com.datastax.bdp.graph.api.model.Schema.Mode.Production)"
+MAKE_STRICT = "schema.config().option('graph.schema_mode').set('production')"
+ALLOW_SCANS = "schema.config().option('graph.allow_scan').set('true')"
 
 
 def find_spark_master(session):
@@ -132,7 +133,7 @@ class BasicGeometricUnitTestCase(BasicKeyspaceUnitTestCase):
 
 
 def generate_classic(session):
-    to_run = [MAKE_STRICT, '''schema.propertyKey('name').Text().ifNotExists().create();
+    to_run = [MAKE_STRICT, ALLOW_SCANS, '''schema.propertyKey('name').Text().ifNotExists().create();
             schema.propertyKey('age').Int().ifNotExists().create();
             schema.propertyKey('lang').Text().ifNotExists().create();
             schema.propertyKey('weight').Float().ifNotExists().create();

@@ -5,8 +5,8 @@ from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph
 import json
 import six
 
-from cassandra import OperationTimedOut, ConsistencyLevel
-from cassandra.protocol import ServerError
+from cassandra import OperationTimedOut, ConsistencyLevel, InvalidRequest
+from cassandra.protocol import ServerError, SyntaxException
 from cassandra.query import QueryTrace
 from dse.graph import (SimpleGraphStatement, graph_object_row_factory, single_object_row_factory,\
                        graph_result_row_factory, Result, Edge, Vertex, Path, GraphOptions, _graph_options)
@@ -99,7 +99,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         query_to_run = self._generate_line_graph(250)
         self.session.execute_graph(query_to_run)
         query_to_run = self._generate_line_graph(300)
-        self.assertRaises(ServerError, self.session.execute_graph, query_to_run)
+        self.assertRaises(SyntaxException, self.session.execute_graph, query_to_run)
 
     def test_range_query(self):
         """
@@ -321,16 +321,12 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         self.assertEqual(v.properties['single_key'][0].value, 'value')
 
         # single_with_two_values
-        v = s.execute_graph("graph.addVertex('single_key', 'value0', 'single_key', 'value1')")[0]
-        self.assertEqual(len(v.properties), 1)
-        self.assertEqual(len(v.properties['single_key']), 1)
-        self.assertEqual(v.properties['single_key'][0].value, 'value1')
+        with self.assertRaises(InvalidRequest):
+            v = s.execute_graph("graph.addVertex('single_key', 'value0', 'single_key', 'value1')")[0]
 
         # default_with_two_values
-        v = s.execute_graph("graph.addVertex('default_key', 'value0', 'default_key', 'value1')")[0]
-        self.assertEqual(len(v.properties), 1)
-        self.assertEqual(len(v.properties['default_key']), 1)
-        self.assertEqual(v.properties['default_key'][0].value, 'value1')
+        with self.assertRaises(InvalidRequest):
+            v = s.execute_graph("graph.addVertex('default_key', 'value0', 'default_key', 'value1')")[0]
 
     def test_vertex_property_properties(self):
         """
