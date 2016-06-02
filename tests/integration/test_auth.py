@@ -156,6 +156,19 @@ class BasicDseAuthTest(unittest.TestCase):
         for connection in connections:
             self.assertTrue('DseAuthenticator' in connection.authenticator.server_authenticator_class)
 
+    def test_connect_with_kerberos_host_not_resolved(self):
+        """
+        This tests will attempt to authenticate with IP, this will fail.
+        @since 1.0.0
+        @jira_ticket PYTHON-566
+        @test_category dse auth
+        @expected_result Client should error when ip is used
+
+        """
+        self.refresh_kerberos_tickets(self.cassandra_keytab, "cassandra@DATASTAX.COM", self.krb_conf)
+        auth_provider = DSEGSSAPIAuthProvider(service='dse', qops=["auth"], resolve_host_name=False)
+        self.assertRaises(NoHostAvailable, self.connect_and_query, auth_provider)
+
 
 def clear_kerberos_tickets():
         subprocess.call(['kdestroy'], shell=False)

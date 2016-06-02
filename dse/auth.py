@@ -4,6 +4,7 @@ from cassandra.auth import AuthProvider, Authenticator
 
 try:
     import kerberos
+    import socket
     _have_kerberos = True
 except ImportError:
     _have_kerberos = False
@@ -13,6 +14,7 @@ try:
     _have_puresasl = True
 except ImportError:
     _have_puresasl = False
+
 
 
 class DSEPlainTextAuthProvider(AuthProvider):
@@ -33,15 +35,20 @@ class DSEGSSAPIAuthProvider(AuthProvider):
     Auth provider for GSS API authentication. Works with legacy `KerberosAuthenticator`
     or `DseAuthenticator` if `kerberos` scheme is enabled.
     """
-    def __init__(self, service=None, qops=None):
+    def __init__(self, service=None, qops=None, resolve_host_name=True):
         if not _have_puresasl:
             raise ImportError('The puresasl library has not been installed')
         if not _have_kerberos:
             raise ImportError('The kerberos library has not been installed')
         self.service = service
         self.qops = qops
+        self.resolve_host_name = resolve_host_name
 
     def new_authenticator(self, host):
+        if(self.resolve_host_name):
+            name_info = socket.getnameinfo((host, 0), 0)
+            if(name_info[0] is not None):
+                host = name_info[0]
         return GSSAPIAuthenticator(host, self.service, self.qops)
 
 
