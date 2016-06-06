@@ -56,6 +56,20 @@ def use_singledc_wth_graph_and_spark(start=True):
     use_singledc(start=start, workloads=['graph', 'spark'])
 
 
+def reset_graph(session, graph_name):
+        session.execute_graph('system.graph(name).ifNotExists().create()', {'name': graph_name})
+        wait_for_graph_inserted(session, graph_name)
+
+
+def wait_for_graph_inserted(session, graph_name):
+        count = 0
+        exists = session.execute_graph('system.graph(name).exists()', {'name': graph_name})[0].value
+        while not exists and count < 50:
+            time.sleep(1)
+            exists = session.execute_graph('system.graph(name).exists()', {'name': graph_name})[0].value
+        return exists
+
+
 class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
     """
     This is basic graph unit test case that provides various utility methods that can be leveraged for testcase setup and tear
@@ -84,16 +98,10 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
         self.session.execute_graph('schema.clear()')
 
     def reset_graph(self):
-        self.session.execute_graph('system.graph(name).ifNotExists().create()', {'name': self.graph_name})
-        self.wait_for_graph_inserted()
+        reset_graph(self.session, self.graph_name)
 
     def wait_for_graph_inserted(self):
-        count = 0
-        exists = self.session.execute_graph('system.graph(name).exists()', {'name': self.graph_name})[0].value
-        while not exists and count < 50:
-            time.sleep(1)
-            exists = self.session.execute_graph('system.graph(name).exists()', {'name': self.graph_name})[0].value
-        return exists
+        wait_for_graph_inserted(self.session, self.graph_name)
 
 
 class BasicGeometricUnitTestCase(BasicKeyspaceUnitTestCase):
@@ -167,6 +175,5 @@ def generate_classic(session):
                 print("error creating classic graph retrying")
                 time.sleep(.5)
             count += 1
-
 
 

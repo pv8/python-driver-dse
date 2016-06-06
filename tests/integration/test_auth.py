@@ -1,12 +1,13 @@
 # Copyright 2016 DataStax, Inc.
 
-
-from cassandra.cluster import Cluster, NoHostAvailable
+from nose.plugins.attrib import attr
+from dse.cluster import Cluster
+from cassandra.cluster import NoHostAvailable
 from cassandra.query import SimpleStatement
 from dse.auth import DSEGSSAPIAuthProvider
 import os, time, logging
 import subprocess
-from tests.integration import ADS_HOME, use_single_node_with_graph
+from tests.integration import ADS_HOME, use_single_node_with_graph, generate_classic, reset_graph
 
 from integration import get_cluster, remove_cluster
 from ccmlib.dse_cluster import DseCluster
@@ -27,6 +28,7 @@ def teardown_module():
     remove_cluster()  # this test messes with config
 
 
+@attr('long')
 class BasicDseAuthTest(unittest.TestCase):
 
     @classmethod
@@ -94,6 +96,7 @@ class BasicDseAuthTest(unittest.TestCase):
         This will clear any existing kerberos tickets by using kdestroy
         """
         clear_kerberos_tickets()
+        self.cluster.shutdown()
 
     def refresh_kerberos_tickets(self, keytab_file, user_name, krb_conf):
         """
@@ -156,6 +159,27 @@ class BasicDseAuthTest(unittest.TestCase):
         for connection in connections:
             self.assertTrue('DseAuthenticator' in connection.authenticator.server_authenticator_class)
 
+    def test_connect_with_kerberos_and_graph(self):
+        """
+        This tests will attempt to authenticate with a user and execute a graph query
+        @since 1.0.0
+        @jira_ticket PYTHON-457
+        @test_category dse auth
+        @expected_result Client should be able to connect and run a basic graph query with authentication
+
+        """
+        self.refresh_kerberos_tickets(self.cassandra_keytab, "cassandra@DATASTAX.COM", self.krb_conf)
+
+        auth_provider = DSEGSSAPIAuthProvider(service='dse', qops=["auth"])
+        rs = self.connect_and_query(auth_provider)
+        self.assertIsNotNone(rs)
+        reset_graph(self.session, self._testMethodName.lower())
+        self.session.default_graph_options.graph_name = self._testMethodName.lower()
+        generate_classic(self.session)
+
+        rs = self.session.execute_graph('g.V()')
+        self.assertIsNotNone(rs)
+
     def test_connect_with_kerberos_host_not_resolved(self):
         """
         This tests will attempt to authenticate with IP, this will fail.
@@ -172,3 +196,4 @@ class BasicDseAuthTest(unittest.TestCase):
 
 def clear_kerberos_tickets():
         subprocess.call(['kdestroy'], shell=False)
+
