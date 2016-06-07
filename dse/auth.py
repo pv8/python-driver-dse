@@ -45,9 +45,7 @@ class DSEGSSAPIAuthProvider(AuthProvider):
 
     def new_authenticator(self, host):
         if self.resolve_host_name:
-            name_info = socket.getnameinfo((host, 0), 0)
-            if name_info[0] is not None:
-                host = name_info[0]
+            host = socket.getnameinfo((host, 0), 0)[0]
         return GSSAPIAuthenticator(host, self.service, self.qops)
 
 
