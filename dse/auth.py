@@ -1,10 +1,8 @@
 # Copyright 2016 DataStax, Inc.
-
-from cassandra.auth import AuthProvider, Authenticator
+import socket
 
 try:
     import kerberos
-    import socket
     _have_kerberos = True
 except ImportError:
     _have_kerberos = False
@@ -15,6 +13,7 @@ try:
 except ImportError:
     _have_puresasl = False
 
+from cassandra.auth import AuthProvider, Authenticator
 
 
 class DSEPlainTextAuthProvider(AuthProvider):
@@ -45,9 +44,9 @@ class DSEGSSAPIAuthProvider(AuthProvider):
         self.resolve_host_name = resolve_host_name
 
     def new_authenticator(self, host):
-        if(self.resolve_host_name):
+        if self.resolve_host_name:
             name_info = socket.getnameinfo((host, 0), 0)
-            if(name_info[0] is not None):
+            if name_info[0] is not None:
                 host = name_info[0]
         return GSSAPIAuthenticator(host, self.service, self.qops)
 
