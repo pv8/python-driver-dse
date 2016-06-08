@@ -1,18 +1,49 @@
 # Copyright 2016 DataStax, Inc.
-
 import json
 import logging
 
-from cassandra.cluster import Cluster, Session, default_lbp_factory
+from cassandra.cluster import Cluster, Session, default_lbp_factory, ExecutionProfile
 from cassandra.query import tuple_factory
 import dse.cqltypes  # unsued here, imported to cause type registration
 from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory
-from dse.policies import HostTargetingPolicy
+from dse.policies import HostTargetingPolicy, NeverRetryPolicy
 from dse.query import HostTargetingStatement
-from dse.util import Point, LineString, Polygon
+from dse.util import Point, LineString, Polygont
 
 
 log = logging.getLogger(__name__)
+
+EXEC_PROFILE_GRAPH_DEFAULT = object()
+EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT = object()
+
+
+class GraphExecutionProfile(ExecutionProfile):
+
+    graph_options = None
+    """
+    :class:`.GraphOptions` to use with this execution
+    """
+
+    def __init__(self, load_balancing_policy=None, retry_policy=None,
+                 consistency_level=ConsistencyLevel.LOCAL_ONE, serial_consistency_level=None,
+                 request_timeout=10.0, row_factory=graph_object_row_factory,
+                 graph_options=None):
+        retry_policy = retry_policy or NeverRetryPolicy()
+        super(GraphExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
+                                                    serial_consistency_level, request_timeout, row_factory)
+        self.graph_options = graph_options or GraphOptions()
+
+
+class GraphAnalyticsExecutionProfile(GraphExecutionProfile):
+
+    def __init__(self, load_balancing_policy=None, retry_policy=None,
+                 consistency_level=ConsistencyLevel.LOCAL_ONE, serial_consistency_level=None,
+                 request_timeout=10.0, row_factory=graph_object_row_factory,
+                 graph_options=None):
+        # TODO: get new default timeouts
+        load_balancing_policy = load_balancing_policy or HostTargetingPolicy(default_lbp_factory())
+        super(GraphExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
+                                                    serial_consistency_level, request_timeout, row_factory, graph_options)
 
 
 class Cluster(Cluster):
@@ -22,9 +53,10 @@ class Cluster(Cluster):
     The default load_balancing_policy adds master host targeting for graph analytics queries.
     """
     def __init__(self, *args, **kwargs):
-        if not kwargs.get('load_balancing_policy'):
-            kwargs['load_balancing_policy'] = HostTargetingPolicy(default_lbp_factory())
         super(Cluster, self).__init__(*args, **kwargs)
+
+        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_DEFAULT, GraphExecutionProfile())
+        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT, GraphAnalyticsExecutionProfile())
 
     def _new_session(self):
         session = Session(self, self.metadata.all_hosts())
