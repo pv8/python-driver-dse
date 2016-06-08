@@ -26,4 +26,3 @@ class TestGSSAPI(unittest.TestCase):
         authenticator = provider.new_authenticator('127.0.0.1')
         self.assertEqual(authenticator.sasl.host, '127.0.0.1')
 
-

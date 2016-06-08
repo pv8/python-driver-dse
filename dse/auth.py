@@ -34,7 +34,17 @@ class DSEGSSAPIAuthProvider(AuthProvider):
     Auth provider for GSS API authentication. Works with legacy `KerberosAuthenticator`
     or `DseAuthenticator` if `kerberos` scheme is enabled.
     """
-    def __init__(self, service=None, qops=None, resolve_host_name=True):
+    def __init__(self, service=None, qops=None, resolve_host_name=True, **properties):
+        """
+
+        :param service: name of the service
+        :param qops: iterable of "Quality of Protection" allowed; see ``puresasl.QOP``
+        :param resolve_host_name: boolean flag indicating whether the authenticator should reverse-lookup an FQDN when
+            creating a new authenticator. Default is ``True``, which will resolve, or return the numeric address if there is no PTR
+            record. Setting ``False`` creates the authenticator with the numeric address known by Cassandra
+        :param properties: additional keyword properties to pass for the ``puresasl.mechanisms.GSSAPIMechanism`` class.
+            Presently, 'principal' is the only one referenced in the ``pure-sasl`` implementation
+        """
         if not _have_puresasl:
             raise ImportError('The puresasl library has not been installed')
         if not _have_kerberos:
@@ -42,11 +52,12 @@ class DSEGSSAPIAuthProvider(AuthProvider):
         self.service = service
         self.qops = qops
         self.resolve_host_name = resolve_host_name
+        self.properties = properties
 
     def new_authenticator(self, host):
         if self.resolve_host_name:
             host = socket.getnameinfo((host, 0), 0)[0]
-        return GSSAPIAuthenticator(host, self.service, self.qops)
+        return GSSAPIAuthenticator(host, self.service, self.qops, self.properties)
 
 
 class BaseDSEAuthenticator(Authenticator):
@@ -81,8 +92,9 @@ class PlainTextAuthenticator(BaseDSEAuthenticator):
 
 
 class GSSAPIAuthenticator(BaseDSEAuthenticator):
-    def __init__(self, host, service, qops):
-        self.sasl = SASLClient(host, service, 'GSSAPI', authorization_id=None, callback=None, qops=qops)
+    def __init__(self, host, service, qops, properties):
+        properties = properties or {}
+        self.sasl = SASLClient(host, service, 'GSSAPI', qops=qops, **properties)
 
     def get_mechanism(self):
         return "GSSAPI"
