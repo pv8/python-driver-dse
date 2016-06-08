@@ -5,15 +5,17 @@ try:
 except ImportError:
     import unittest  # noqa
 
+import re
 import os
 import time
+import requests
 from os.path import expanduser
 
 from ccmlib import common
 
 from dse.cluster import Cluster
-from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnitTestCase, drop_keyspace_shutdown_cluster, get_cluster, teardown_package as base_teardown
-from integration import use_single_node, use_singledc
+from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnitTestCase, drop_keyspace_shutdown_cluster, get_cluster, get_node, teardown_package as base_teardown
+from integration import use_singledc, use_single_node, wait_for_node_socket
 from cassandra.protocol import ServerError
 
 home = expanduser('~')
@@ -36,6 +38,26 @@ def find_spark_master(session):
     return None
 
 
+def wait_for_spark_workers(num_of_expected_workers, timeout):
+    """
+    This queries the spark master and checks for the expected number of workers
+    """
+    start_time = time.time()
+    match = False
+    while True:
+        r = requests.get("http://localhost:7080")
+        match = re.search('Alive Workers:.*(\d+)</li>', r.text)
+        num_workers = int(match.group(1))
+        if num_workers == num_of_expected_workers:
+            match = True
+            break
+        elif time.time() - start_time > timeout:
+            match = True
+            break
+        time.sleep(1)
+    return match
+
+
 def teardown_package():
     base_teardown()
 
@@ -53,7 +75,42 @@ def use_singledc_wth_graph(start=True):
 
 
 def use_singledc_wth_graph_and_spark(start=True):
-    use_singledc(start=start, workloads=['graph', 'spark'])
+    use_cluster_with_graph(3)
+
+
+def use_cluster_with_graph(num_nodes):
+    """
+    This is a  work around to account for the fact that spark nodes will conflict over master assignment
+    when started all at once.
+    """
+
+    # Create the cluster but don't start it.
+    use_singledc(start=False, workloads=['graph', 'spark'])
+    # Start first node.
+    get_node(1).start(wait_for_binary_proto=True)
+    # Wait binary protocol port to open
+    wait_for_node_socket(get_node(1), 120)
+    # Wait for spark master to start up
+    spark_master_http = ("localhost", 7080)
+    common.check_socket_listening(spark_master_http, timeout=60)
+    tmp_cluster = Cluster(protocol_version=PROTOCOL_VERSION)
+
+    # Start up remaining nodes.
+    try:
+        session = tmp_cluster.connect()
+        statement = "ALTER KEYSPACE dse_leases WITH REPLICATION = {'class': 'NetworkTopologyStrategy', 'dc1': '%d'}" % (num_nodes)
+        session.execute(statement)
+    finally:
+        tmp_cluster.shutdown()
+
+    for i in range(1, num_nodes+1):
+        if i is not 1:
+            node = get_node(i)
+            node.start(wait_for_binary_proto=True)
+            wait_for_node_socket(node, 120)
+
+    # Wait for workers to show up as Alive on master
+    wait_for_spark_workers(3, 120)
 
 
 def reset_graph(session, graph_name):
