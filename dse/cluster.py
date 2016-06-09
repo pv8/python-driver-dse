@@ -1,18 +1,72 @@
 # Copyright 2016 DataStax, Inc.
-
 import json
 import logging
 
-from cassandra.cluster import Cluster, Session, default_lbp_factory
+from cassandra import ConsistencyLevel
+from cassandra.cluster import Cluster, Session, default_lbp_factory, ExecutionProfile, _ConfigMode, _NOT_SET
 from cassandra.query import tuple_factory
 import dse.cqltypes  # unsued here, imported to cause type registration
 from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory
-from dse.policies import HostTargetingPolicy
+from dse.policies import HostTargetingPolicy, NeverRetryPolicy
 from dse.query import HostTargetingStatement
 from dse.util import Point, LineString, Polygon
 
 
 log = logging.getLogger(__name__)
+
+EXEC_PROFILE_GRAPH_DEFAULT = object()
+EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT = object()
+
+
+class GraphExecutionProfile(ExecutionProfile):
+
+    graph_options = None
+    """
+    :class:`.GraphOptions` to use with this execution
+
+    Default options for graph queries, initialized as follows by default::
+
+        GraphOptions(graph_source=b'default',
+                     graph_language=b'gremlin-groovy')
+
+    See dse.graph.GraphOptions
+    """
+
+    request_factory = None
+    """
+    TODO
+    I think this is "wait forever now"
+    """
+
+    row_factory = None
+    """
+    Row factory used for graph results.
+
+    The default is dse.graph.graph_result_row_factory.
+    """
+
+    def __init__(self, load_balancing_policy=None, retry_policy=None,
+                 consistency_level=ConsistencyLevel.LOCAL_ONE, serial_consistency_level=None,
+                 request_timeout=10.0, row_factory=graph_object_row_factory,
+                 graph_options=None):
+        # TODO: make sure docs inherit, make a class docstring
+        retry_policy = retry_policy or NeverRetryPolicy()
+        super(GraphExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
+                                                    serial_consistency_level, request_timeout, row_factory)
+        self.graph_options = graph_options or GraphOptions(graph_source=b'default',
+                                                           graph_language=b'gremlin-groovy')
+
+
+class GraphAnalyticsExecutionProfile(GraphExecutionProfile):
+
+    def __init__(self, load_balancing_policy=None, retry_policy=None,
+                 consistency_level=ConsistencyLevel.LOCAL_ONE, serial_consistency_level=None,
+                 request_timeout=30.0, row_factory=graph_object_row_factory,
+                 graph_options=None):
+        # TODO: get new default timeouts
+        load_balancing_policy = load_balancing_policy or HostTargetingPolicy(default_lbp_factory())
+        super(GraphAnalyticsExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
+                                                             serial_consistency_level, request_timeout, row_factory, graph_options)
 
 
 class Cluster(Cluster):
@@ -22,18 +76,21 @@ class Cluster(Cluster):
     The default load_balancing_policy adds master host targeting for graph analytics queries.
     """
     def __init__(self, *args, **kwargs):
-        if not kwargs.get('load_balancing_policy'):
-            kwargs['load_balancing_policy'] = HostTargetingPolicy(default_lbp_factory())
         super(Cluster, self).__init__(*args, **kwargs)
+
+        if self._config_mode == _ConfigMode.LEGACY:
+            raise ValueError("DSE Cluster uses execution profiles and should not specify legacy parameters "
+                             "load_balancing_policy or default_retry_policy. Configure this in a profile instead.")
+
+        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_DEFAULT, GraphExecutionProfile())
+        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT, GraphAnalyticsExecutionProfile())
+        self._config_mode = _ConfigMode.PROFILES
 
     def _new_session(self):
         session = Session(self, self.metadata.all_hosts())
         self._session_register_user_types(session)
         self.sessions.add(session)
         return session
-
-
-_NOT_SET = object()
 
 
 class Session(Session):
@@ -43,33 +100,6 @@ class Session(Session):
 
         - Pre-registered DSE-specific types (geometric types)
         - Graph execution API
-    """
-
-    default_graph_options = None
-    """
-    Default options for graph queries, initialized as follows by default::
-
-        GraphOptions(graph_source=b'default',
-                     graph_language=b'gremlin-groovy')
-
-    See dse.graph.GraphOptions
-    """
-
-    default_graph_row_factory = staticmethod(graph_object_row_factory)
-    """
-    Row factory used for graph results.
-    The default is dse.graph.graph_result_row_factory.
-    """
-
-    default_graph_timeout = 32.0
-    """
-    A default timeout (seconds) for graph queries executed with
-    :meth:`.execute_graph()`.  This default may be overridden with the
-    `timeout` parameter of that method.
-
-    Setting this to :const:`None` will cause no timeouts to be set by default.
-
-    .. versionadded:: 1.0.0
     """
 
     def __init__(self, cluster, hosts):
@@ -82,10 +112,7 @@ class Session(Session):
         for typ in (Point, LineString, Polygon):
             self.encoder.mapping[typ] = cql_encode_str_quoted
 
-        self.default_graph_options = GraphOptions(graph_source=b'default',
-                                                  graph_language=b'gremlin-groovy')
-
-    def execute_graph(self, query, parameters=None, timeout=_NOT_SET, trace=False, row_factory=None):
+    def execute_graph(self, query, parameters=None, trace=False, execution_profile=EXEC_PROFILE_GRAPH_DEFAULT):
         """
         Executes a Gremlin query string or SimpleGraphStatement synchronously,
         and returns a ResultSet from this execution.
@@ -94,10 +121,7 @@ class Session(Session):
         JSON-serializable.
         (TBD: make this customizable)
 
-        `timeout` and `trace` have the same meaning as in `Session.execute <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Session.execute>`_.
-
-        `row_factory` defines how the results of this query are returned. If not set,
-        it defaults to :attr:`Session.default_graph_row_factory`.
+        `execution_profile`: TODO
 
         Example usage::
 
@@ -110,21 +134,26 @@ class Session(Session):
         """
         if not isinstance(query, SimpleGraphStatement):
             query = SimpleGraphStatement(query)
-        options = self.default_graph_options.copy()
-        options.update(query.options)
 
         graph_parameters = None
         if parameters:
             graph_parameters = self._transform_params(parameters)
 
-        if timeout is _NOT_SET:
-            timeout = self.default_graph_timeout
-        future = self._create_response_future(query, parameters=None, trace=trace, custom_payload=options.get_options_map(), timeout=timeout)
+        execution_profile = self._get_execution_profile(execution_profile)  # look up instance here so we can apply the extended attributes
+
+        try:
+            options = execution_profile.graph_options.copy()
+        except AttributeError:
+            raise ValueError("Execution profile for graph queries must derive from GraphExecutionProfile, and provide graph_options")
+        options.update(query.options)
+        # TODO: if we commit to Exec profiles, we shouldn't have graph options on the statement
+
+        future = self._create_response_future(query, parameters=None, trace=trace, custom_payload=options.get_options_map(),
+                                              timeout=_NOT_SET, execution_profile=execution_profile)
         future.message._query_params = graph_parameters
         future._protocol_handler = self.client_protocol_handler
-        future.row_factory = row_factory or self.default_graph_row_factory
 
-        if options.is_analytics_source and isinstance(self._load_balancer, HostTargetingPolicy):
+        if options.is_analytics_source and isinstance(execution_profile.load_balancing_policy, HostTargetingPolicy):
             self._target_analytics_master(future)
         else:
             future.send_request()

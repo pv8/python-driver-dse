@@ -23,10 +23,11 @@ class SparkLBTests(BasicGraphUnitTestCase):
     def test_spark_analytic_query(self):
         generate_classic(self.session)
         spark_master = find_spark_master(self.session)
+
         # Run multipltle times to ensure we don't round robin
         for i in range(3):
             to_run = SimpleGraphStatement("g.V().count()")
             to_run.options.set_source_analytics()
-            rs = self.session.execute_graph(to_run, timeout=30)
+            rs = self.session.execute_graph(to_run)
             self.assertEqual(rs[0].value, 6)
             self.assertEqual(rs.response_future._current_host.address, spark_master)

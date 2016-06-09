@@ -13,7 +13,7 @@ from os.path import expanduser
 
 from ccmlib import common
 
-from dse.cluster import Cluster
+from dse.cluster import Cluster, EXEC_PROFILE_GRAPH_DEFAULT, EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT
 from integration import PROTOCOL_VERSION, get_server_versions, BasicKeyspaceUnitTestCase, drop_keyspace_shutdown_cluster, get_cluster, get_node, teardown_package as base_teardown
 from integration import use_singledc, use_single_node, wait_for_node_socket
 from cassandra.protocol import ServerError
@@ -145,7 +145,9 @@ class BasicGraphUnitTestCase(BasicKeyspaceUnitTestCase):
     def setUp(self):
         self.session_setup()
         self.reset_graph()
-        self.session.default_graph_options.graph_name = self.graph_name
+        profiles = self.cluster.profile_manager.profiles
+        profiles[EXEC_PROFILE_GRAPH_DEFAULT].graph_options.graph_name = self.graph_name
+        profiles[EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT].graph_options.graph_name = self.graph_name
         self.clear_schema()
 
     def tearDown(self):

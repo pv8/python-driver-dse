@@ -1,7 +1,7 @@
 # Copyright 2016 DataStax, Inc.
 import itertools
 
-from cassandra.policies import LoadBalancingPolicy, HostDistance
+from cassandra.policies import LoadBalancingPolicy, HostDistance, RetryPolicy
 
 
 class WrapperPolicy(LoadBalancingPolicy):
@@ -59,3 +59,12 @@ class HostTargetingPolicy(WrapperPolicy):
         else:
             for h in child.make_query_plan(keyspace, query):
                 yield h
+
+
+class NeverRetryPolicy(RetryPolicy):
+    def _rethrow(self, *args, **kwargs):
+        return self.RETHROW, None
+
+    on_read_timeout = _rethrow
+    on_write_timeout = _rethrow
+    on_unavailable = _rethrow
