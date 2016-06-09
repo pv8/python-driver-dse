@@ -1,15 +1,18 @@
 # Copyright 2016 DataStax, Inc.
-import time
-from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph, use_singledc_wth_graph, generate_classic
 
+from copy import copy
 import json
 import six
 
 from cassandra import OperationTimedOut, ConsistencyLevel, InvalidRequest
 from cassandra.protocol import ServerError, SyntaxException
 from cassandra.query import QueryTrace
+
+from dse.cluster import EXEC_PROFILE_GRAPH_DEFAULT
 from dse.graph import (SimpleGraphStatement, graph_object_row_factory, single_object_row_factory,\
                        graph_result_row_factory, Result, Edge, Vertex, Path, GraphOptions, _graph_options)
+
+from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph, use_singledc_wth_graph, generate_classic
 
 
 def setup_module():
@@ -135,7 +138,8 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         """
         self._generate_multi_field_graph()  # TODO: we could just make a single vertex with properties of all types, or even a simple query that just uses a sequence of groovy expressions
 
-        rs = self.session.execute_graph("g.V()", row_factory=graph_result_row_factory)  # requires simplified row factory to avoid shedding id/~type information used for validation below
+        prof = self.session.execution_profile_clone_update(EXEC_PROFILE_GRAPH_DEFAULT, row_factory=graph_result_row_factory)  # requires simplified row factory to avoid shedding id/~type information used for validation below
+        rs = self.session.execute_graph("g.V()", execution_profile=prof)
 
         for result in rs:
             self._validate_type(result)
@@ -198,7 +202,8 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         graph_params = [a[2] for a in _graph_options if a[0] in cl_attrs]
 
         s = self.session
-        default_graph_opts = s.default_graph_options
+        default_profile = s.cluster.profile_manager.profiles[EXEC_PROFILE_GRAPH_DEFAULT]
+        default_graph_opts = default_profile.graph_options
         try:
             # Checks the default graph attributes and ensures that both  graph_read_consistency_level and graph_write_consistency_level
             # Are None by default
@@ -215,27 +220,28 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             cl = {0: ConsistencyLevel.ONE, 1: ConsistencyLevel.LOCAL_QUORUM}
             for k, v in cl.items():
                 setattr(opts, cl_attrs[k], v)
-            s.default_graph_options = opts
+            default_profile.graph_options = opts
 
             res = s.execute_graph("null")
 
             for k, v in cl.items():
                 self.assertEqual(res.response_future.message.custom_payload[graph_params[k]], six.b(ConsistencyLevel.value_to_name[v]))
 
-            # statement values override session defaults
+            # passed profile values override session defaults
             cl = {0: ConsistencyLevel.ALL, 1: ConsistencyLevel.QUORUM}
-            sgs = SimpleGraphStatement("null")
+            opts = GraphOptions()
+            opts.update(default_graph_opts)
             for k, v in cl.items():
                 attr_name = cl_attrs[k]
-                setattr(sgs.options, attr_name, v)
-                self.assertNotEqual(getattr(s.default_graph_options, attr_name), getattr(sgs.options, attr_name))
-
-            res = s.execute_graph(sgs)
+                setattr(opts, attr_name, v)
+                self.assertNotEqual(getattr(default_profile.graph_options, attr_name), getattr(opts, attr_name))
+            tmp_profile = s.execution_profile_clone_update(EXEC_PROFILE_GRAPH_DEFAULT, graph_options=opts)
+            res = s.execute_graph("null", execution_profile=tmp_profile)
 
             for k, v in cl.items():
                 self.assertEqual(res.response_future.message.custom_payload[graph_params[k]], six.b(ConsistencyLevel.value_to_name[v]))
         finally:
-            s.default_graph_options = default_graph_opts
+            default_profile.graph_options = default_graph_opts
 
     def test_geometric_graph_types(self):
         """
@@ -369,12 +375,15 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         query = "[%r]" % (value,)
 
         # default is passed down
+        default_graph_profile = s.cluster.profile_manager.profiles[EXEC_PROFILE_GRAPH_DEFAULT]
         rs = s.execute_graph(query)
         self.assertEqual(rs[0].value, value)
-        self.assertEqual(rs.response_future.timeout, s.default_graph_timeout)
+        self.assertEqual(rs.response_future.timeout, default_graph_profile.request_timeout)
 
         # tiny timeout times out as expected
-        self.assertRaises(OperationTimedOut, s.execute_graph, query, timeout=0.0001)
+        tmp_profile = copy(default_graph_profile)
+        tmp_profile.request_timeout = 0.0001
+        self.assertRaises(OperationTimedOut, s.execute_graph, query, execution_profile=tmp_profile)
 
     def test_execute_graph_trace(self):
         s = self.session
@@ -398,13 +407,15 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         s = self.session
 
         # default Results
-        self.assertEqual(s.default_graph_row_factory, graph_object_row_factory)
+        default_profile = s.cluster.profile_manager.profiles[EXEC_PROFILE_GRAPH_DEFAULT]
+        self.assertEqual(default_profile.row_factory, graph_object_row_factory)
         result = s.execute_graph("123")[0]
         self.assertIsInstance(result, Result)
         self.assertEqual(result.value, 123)
 
         # other via parameter
-        rs = s.execute_graph("123", row_factory=single_object_row_factory)
+        prof = s.execution_profile_clone_update(EXEC_PROFILE_GRAPH_DEFAULT, row_factory=single_object_row_factory)
+        rs = s.execute_graph("123", execution_profile=prof)
         self.assertEqual(rs.response_future.row_factory, single_object_row_factory)
         self.assertEqual(json.loads(rs[0]), {'result': 123})
 
@@ -512,4 +523,5 @@ class BasicGraphTest(BasicGraphUnitTestCase):
                 ids.add(v.id());
             }
             g.V().count();'''
-        self.session.execute_graph(to_run, timeout=32)
+        prof = self.session.execution_profile_clone_update(EXEC_PROFILE_GRAPH_DEFAULT, request_timeout=32)
+        self.session.execute_graph(to_run, execution_profile=prof)
