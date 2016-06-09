@@ -62,9 +62,9 @@ class HostTargetingPolicy(WrapperPolicy):
 
 
 class NeverRetryPolicy(RetryPolicy):
-    def _rethow(self, *args, **kwargs):
+    def _rethrow(self, *args, **kwargs):
         return self.RETHROW, None
 
-    on_read_timeout = _rethow
-    on_write_timeout = _rethow
-    on_unavailable = _rethow
+    on_read_timeout = _rethrow
+    on_write_timeout = _rethrow
+    on_unavailable = _rethrow
