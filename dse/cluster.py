@@ -2,9 +2,10 @@
 import json
 import logging
 
-from cassandra import ConsistencyLevel
+from cassandra import ConsistencyLevel, __version__ as core_driver_version
 from cassandra.cluster import Cluster, Session, default_lbp_factory, ExecutionProfile, _ConfigMode, _NOT_SET
 from cassandra.query import tuple_factory
+from dse import _core_driver_target_version, _use_any_core_driver_version, __version__ as dse_driver_version
 import dse.cqltypes  # unsued here, imported to cause type registration
 from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory
 from dse.policies import HostTargetingPolicy, NeverRetryPolicy
@@ -76,6 +77,8 @@ class Cluster(Cluster):
     The default load_balancing_policy adds master host targeting for graph analytics queries.
     """
     def __init__(self, *args, **kwargs):
+        self._validate_core_version()
+
         super(Cluster, self).__init__(*args, **kwargs)
 
         if self._config_mode == _ConfigMode.LEGACY:
@@ -91,6 +94,14 @@ class Cluster(Cluster):
         self._session_register_user_types(session)
         self.sessions.add(session)
         return session
+
+    def _validate_core_version(self):
+        if _core_driver_target_version != core_driver_version:
+            if _use_any_core_driver_version:
+                log.warning("DSE driver version %s is intended for use with core driver version %s. Environment overriden to use %s",
+                            dse_driver_version, _core_driver_target_version, core_driver_version)
+            else:
+                raise RuntimeError("DSE driver version %s is intended for use with core driver version %s." % (dse_driver_version, _core_driver_target_version))
 
 
 class Session(Session):
