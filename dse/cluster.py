@@ -101,7 +101,8 @@ class Cluster(Cluster):
                 log.warning("DSE driver version %s is intended for use with core driver version %s. Environment overriden to use %s",
                             dse_driver_version, _core_driver_target_version, core_driver_version)
             else:
-                raise RuntimeError("DSE driver version %s is intended for use with core driver version %s." % (dse_driver_version, _core_driver_target_version))
+                import cassandra
+                raise RuntimeError("DSE driver version %s is intended for use with core driver version %s. This environment is loading version %s from %s" % (dse_driver_version, _core_driver_target_version, core_driver_version, cassandra.__file__))
 
 
 class Session(Session):
