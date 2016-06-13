@@ -1,12 +1,14 @@
 # Copyright 2016 DataStax, Inc.
 import json
 import logging
+import six
 
 from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster, Session, default_lbp_factory, ExecutionProfile, _ConfigMode, _NOT_SET
+from cassandra.marshal import int64_pack
 from cassandra.query import tuple_factory
 import dse.cqltypes  # unsued here, imported to cause type registration
-from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory
+from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory, _request_timeout_key
 from dse.policies import HostTargetingPolicy, NeverRetryPolicy
 from dse.query import HostTargetingStatement
 from dse.util import Point, LineString, Polygon
@@ -16,6 +18,9 @@ log = logging.getLogger(__name__)
 
 EXEC_PROFILE_GRAPH_DEFAULT = object()
 EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT = object()
+
+if six.PY3:
+    long = int
 
 
 class GraphExecutionProfile(ExecutionProfile):
@@ -148,7 +153,9 @@ class Session(Session):
         options.update(query.options)
         # TODO: if we commit to Exec profiles, we shouldn't have graph options on the statement
 
-        future = self._create_response_future(query, parameters=None, trace=trace, custom_payload=options.get_options_map(),
+        custom_payload = options.get_options_map()
+        custom_payload[_request_timeout_key] = int64_pack(long(execution_profile.request_timeout * 1000))
+        future = self._create_response_future(query, parameters=None, trace=trace, custom_payload=custom_payload,
                                               timeout=_NOT_SET, execution_profile=execution_profile)
         future.message._query_params = graph_parameters
         future._protocol_handler = self.client_protocol_handler
