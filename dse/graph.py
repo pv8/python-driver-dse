@@ -16,6 +16,9 @@ Setting this overrides the native `Statement.consistency_level <http://datastax.
 Setting this overrides the native `Statement.consistency_level <http://datastax.github.io/python-driver/api/cassandra/query.html#cassandra.query.Statement.consistency_level>`_ for write operations to Cassandra persistence.''', 'graph-write-consistency')
 )
 
+# this is defined by the execution profile attribute, not in graph options
+_request_timeout_key = 'request-timeout'
+
 
 class GraphOptions(object):
     """
