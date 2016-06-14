@@ -23,7 +23,7 @@ home = expanduser('~')
 # Home directory of the Embedded Apache Directory Server to use
 ADS_HOME = os.getenv('ADS_HOME', home)
 MAKE_STRICT = "schema.config().option('graph.schema_mode').set('production')"
-MAKE_NON_STRICT = "schema.config().option('graph.schema_mode').set('Development')"
+MAKE_NON_STRICT = "schema.config().option('graph.schema_mode').set('development')"
 ALLOW_SCANS = "schema.config().option('graph.allow_scan').set('true')"
 
 

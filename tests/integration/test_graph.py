@@ -7,13 +7,15 @@ import six
 from cassandra import OperationTimedOut, ConsistencyLevel, InvalidRequest
 from cassandra.protocol import ServerError, SyntaxException
 from cassandra.query import QueryTrace
+from cassandra.policies import WhiteListRoundRobinPolicy
+from cassandra.cluster import NoHostAvailable
 
-from dse.cluster import EXEC_PROFILE_GRAPH_DEFAULT
+from dse.cluster import EXEC_PROFILE_GRAPH_DEFAULT, GraphExecutionProfile, Cluster
 from dse.graph import (SimpleGraphStatement, graph_object_row_factory, single_object_row_factory,\
                        graph_result_row_factory, Result, Edge, Vertex, Path, GraphOptions, _graph_options)
 
 from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph, use_singledc_wth_graph, generate_classic, ALLOW_SCANS, MAKE_NON_STRICT
-
+from integration import PROTOCOL_VERSION
 
 def setup_module():
     use_single_node_with_graph()
@@ -309,7 +311,6 @@ class BasicGraphTest(BasicGraphUnitTestCase):
                            schema.vertexLabel('MPW1').properties('mult_key').ifNotExists().create();
                            schema.vertexLabel('SW1').properties('single_key').ifNotExists().create();''')
 
-
         v = s.execute_graph('''v = graph.addVertex('MPW1')
                                  v.property('mult_key', 'value')
                                  v''')[0]
@@ -560,3 +561,51 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             g.V().count();'''
         prof = self.session.execution_profile_clone_update(EXEC_PROFILE_GRAPH_DEFAULT, request_timeout=32)
         self.session.execute_graph(to_run, execution_profile=prof)
+
+
+class GraphProfileTests(BasicGraphUnitTestCase):
+
+        def test_graph_profile(self):
+            """
+            Test verifying various aspects of graph config properties.
+
+            @since 1.0.0
+            @jira_ticket PYTHON-570
+
+            @test_category dse graph
+            """
+            generate_classic(self.session)
+            # Create variou execution policies
+            exec_dif_factory = GraphExecutionProfile(row_factory=single_object_row_factory)
+            exec_dif_factory.graph_options.graph_name = self.graph_name
+            exec_dif_lbp = GraphExecutionProfile(load_balancing_policy=WhiteListRoundRobinPolicy(['127.0.0.1']))
+            exec_dif_lbp.graph_options.graph_name = self.graph_name
+            exec_bad_lbp = GraphExecutionProfile(load_balancing_policy=WhiteListRoundRobinPolicy(['127.0.0.2']))
+            exec_dif_lbp.graph_options.graph_name = self.graph_name
+            exec_short_timeout = GraphExecutionProfile(request_timeout=1, load_balancing_policy=WhiteListRoundRobinPolicy(['127.0.0.1']))
+            exec_short_timeout.graph_options.graph_name = self.graph_name
+
+            # Add a single exection policy on cluster creation
+            local_cluster = Cluster(protocol_version=PROTOCOL_VERSION, execution_profiles={"exec_dif_factory": exec_dif_factory})
+            local_session = local_cluster.connect()
+            rs1 = self.session.execute_graph('g.V()')
+            rs2 = local_session.execute_graph('g.V()', execution_profile='exec_dif_factory')
+
+            # Verify default and non default policy works
+            self.assertFalse(isinstance(rs2[0], Vertex))
+            self.assertTrue(isinstance(rs1[0], Vertex))
+            # Add other policies validate that lbp are honored
+            local_cluster.add_execution_profile("exec_dif_ldp", exec_dif_lbp)
+            local_session.execute_graph('g.V()', execution_profile="exec_dif_ldp")
+            local_cluster.add_execution_profile("exec_bad_lbp", exec_bad_lbp)
+            with self.assertRaises(NoHostAvailable):
+                local_session.execute_graph('g.V()', execution_profile="exec_bad_lbp")
+
+            # Try with missing EP
+            with self.assertRaises(ValueError):
+                local_session.execute_graph('g.V()', execution_profile='bad_exec_profile')
+
+            # Validate that timeout is honored
+            local_cluster.add_execution_profile("exec_short_timeout", exec_short_timeout)
+            with self.assertRaises(OperationTimedOut):
+                local_session.execute_graph('java.util.concurrent.TimeUnit.MILLISECONDS.sleep(2000L);', execution_profile='exec_short_timeout')
