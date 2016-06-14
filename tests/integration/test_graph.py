@@ -1,6 +1,7 @@
 # Copyright 2016 DataStax, Inc.
 
 from copy import copy
+from itertools import chain
 import json
 import six
 
@@ -242,6 +243,17 @@ class BasicGraphTest(BasicGraphUnitTestCase):
                 self.assertEqual(res.response_future.message.custom_payload[graph_params[k]], six.b(ConsistencyLevel.value_to_name[v]))
         finally:
             default_profile.graph_options = default_graph_opts
+
+    def test_additional_custom_payload(self):
+        s = self.session
+        custom_payload = {'some': 'example'.encode('utf-8'), 'items': 'here'.encode('utf-8')}
+        sgs = SimpleGraphStatement("null", custom_payload=custom_payload)
+        future = s.execute_graph_async(sgs)
+
+        default_profile = s.cluster.profile_manager.profiles[EXEC_PROFILE_GRAPH_DEFAULT]
+        default_graph_opts = default_profile.graph_options
+        for k, v in chain(custom_payload.items(), default_graph_opts.get_options_map().items()):
+            self.assertEqual(future.message.custom_payload[k], v)
 
     def test_geometric_graph_types(self):
         """
