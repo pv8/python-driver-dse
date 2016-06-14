@@ -401,7 +401,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
         # tiny timeout times out as expected
         tmp_profile = copy(default_graph_profile)
-        tmp_profile.request_timeout = 0.0001
+        tmp_profile.request_timeout = 0.0000
         self.assertRaises(OperationTimedOut, s.execute_graph, query, execution_profile=tmp_profile)
 
     def test_execute_graph_trace(self):
