@@ -34,9 +34,8 @@ class DSEGSSAPIAuthProvider(AuthProvider):
     Auth provider for GSS API authentication. Works with legacy `KerberosAuthenticator`
     or `DseAuthenticator` if `kerberos` scheme is enabled.
     """
-    def __init__(self, service=None, qops=None, resolve_host_name=True, **properties):
+    def __init__(self, service='dse', qops=('auth',), resolve_host_name=True, **properties):
         """
-
         :param service: name of the service
         :param qops: iterable of "Quality of Protection" allowed; see ``puresasl.QOP``
         :param resolve_host_name: boolean flag indicating whether the authenticator should reverse-lookup an FQDN when
