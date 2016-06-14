@@ -1,13 +1,14 @@
 # Copyright 2016 DataStax, Inc.
 
 from __future__ import print_function
-from dse import __version__
+from dse import __version__, _core_driver_target_version
 
 import ez_setup
 ez_setup.use_setuptools()
 
 from setuptools import setup
 from distutils.cmd import Command
+import os
 
 long_description = ""
 with open("README.rst") as f:
@@ -45,8 +46,12 @@ class DocCommand(Command):
         print("Documentation step '%s' performed, results here:" % mode)
         print("   file://%s/%s/index.html" % (os.path.dirname(os.path.realpath(__file__)), path))
 
-dependencies = ['cassandra-driver >= 3.2.0a1']
-
+# not officially supported, but included for flexibility in test environments
+open_core_version = bool(os.environ.get('DSE_DRIVER_INSTALL_OPEN_CORE_VERSION'))
+if open_core_version:
+    dependencies = ['cassandra-driver >= 3.2.0a1']
+else:
+    dependencies = ['cassandra-driver == %s' % (_core_driver_target_version,)]
 
 setup(
     name='cassandra-driver-dse',
