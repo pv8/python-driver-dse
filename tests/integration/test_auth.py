@@ -1,7 +1,7 @@
 # Copyright 2016 DataStax, Inc.
 
 from nose.plugins.attrib import attr
-from dse.cluster import Cluster
+from dse.cluster import Cluster, EXEC_PROFILE_GRAPH_DEFAULT
 from cassandra.cluster import NoHostAvailable
 from cassandra.query import SimpleStatement
 from dse.auth import DSEGSSAPIAuthProvider
@@ -67,15 +67,15 @@ class BasicDseAuthTest(unittest.TestCase):
             config_options = {'kerberos_options': {'keytab': self.dse_keytab,
                                                    'service_principal': 'dse/_HOST@DATASTAX.COM',
                                                    'qop': 'auth'},
-                              'authentication_options' : {'enabled': 'true',
-                                                          'default_scheme': 'kerberos',
-                                                          'scheme_permissions': 'true',
-                                                          'allow_digest_with_kerberos': 'true',
-                                                          'plain_text_without_ssl': 'warn',
-                                                          'transitional_mode': 'disabled'}
+                              'authentication_options': {'enabled': 'true',
+                                                         'default_scheme': 'kerberos',
+                                                         'scheme_permissions': 'true',
+                                                         'allow_digest_with_kerberos': 'true',
+                                                         'plain_text_without_ssl': 'warn',
+                                                         'transitional_mode': 'disabled'}
                               }
 
-            krb5java = "-Djava.security.krb5.conf="+self.krb_conf
+            krb5java = "-Djava.security.krb5.conf=" + self.krb_conf
             # Setup dse authenticator in cassandra.yaml
             ccm_cluster.set_configuration_options({'authenticator': 'com.datastax.bdp.cassandra.auth.DseAuthenticator'})
             ccm_cluster.set_dse_configuration_options(config_options)
@@ -151,7 +151,7 @@ class BasicDseAuthTest(unittest.TestCase):
 
         """
         self.refresh_kerberos_tickets(self.cassandra_keytab, "cassandra@DATASTAX.COM", self.krb_conf)
-        auth_provider = DSEGSSAPIAuthProvider(service='dse', qops=["auth"])
+        auth_provider = DSEGSSAPIAuthProvider(service='dse', qops=['auth'])
         rs = self.connect_and_query(auth_provider)
         self.assertIsNotNone(rs)
         connections = [c for holders in self.cluster.get_connection_holders() for c in holders.get_connections()]
@@ -174,7 +174,8 @@ class BasicDseAuthTest(unittest.TestCase):
         rs = self.connect_and_query(auth_provider)
         self.assertIsNotNone(rs)
         reset_graph(self.session, self._testMethodName.lower())
-        self.session.default_graph_options.graph_name = self._testMethodName.lower()
+        profiles = self.cluster.profile_manager.profiles
+        profiles[EXEC_PROFILE_GRAPH_DEFAULT].graph_options.graph_name = self._testMethodName.lower()
         generate_classic(self.session)
 
         rs = self.session.execute_graph('g.V()')
