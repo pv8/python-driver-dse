@@ -12,7 +12,7 @@ from dse.cluster import EXEC_PROFILE_GRAPH_DEFAULT
 from dse.graph import (SimpleGraphStatement, graph_object_row_factory, single_object_row_factory,\
                        graph_result_row_factory, Result, Edge, Vertex, Path, GraphOptions, _graph_options)
 
-from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph, use_singledc_wth_graph, generate_classic
+from tests.integration import BasicGraphUnitTestCase, use_single_node_with_graph, use_singledc_wth_graph, generate_classic, ALLOW_SCANS, MAKE_NON_STRICT
 
 
 def setup_module():
@@ -256,8 +256,8 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         @test_category dse graph
         """
         self.session.execute_graph('''import org.apache.cassandra.db.marshal.geometry.Point;
-                                      schema.vertexLabel('PointV').ifNotExists().create();
-                                      schema.propertyKey('pointP').Point().ifNotExists().create();''')
+                                      schema.propertyKey('pointP').Point().ifNotExists().create();
+                                      schema.vertexLabel('PointV').properties('pointP').ifNotExists().create();''')
 
         rs = self.session.execute_graph('''g.addV(label, 'PointV', 'pointP', 'POINT(0 1)');''')
 
@@ -305,34 +305,38 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         s = self.session
         s.execute_graph('''Schema schema = graph.schema();
                            schema.propertyKey('mult_key').Text().multiple().ifNotExists().create();
-                           schema.propertyKey('single_key').Text().single().ifNotExists().create();''')
+                           schema.propertyKey('single_key').Text().single().ifNotExists().create();
+                           schema.vertexLabel('MPW1').properties('mult_key').ifNotExists().create();
+                           schema.vertexLabel('SW1').properties('single_key').ifNotExists().create();''')
 
-        # multiple_with_one_value
-        v = s.execute_graph("graph.addVertex('mult_key', 'value')")[0]
+
+        v = s.execute_graph('''v = graph.addVertex('MPW1')
+                                 v.property('mult_key', 'value')
+                                 v''')[0]
         self.assertEqual(len(v.properties), 1)
         self.assertEqual(len(v.properties['mult_key']), 1)
         self.assertEqual(v.properties['mult_key'][0].value, 'value')
 
         # multiple_with_two_values
-        v = s.execute_graph("graph.addVertex('mult_key', 'value0', 'mult_key', 'value1')")[0]
+        v = s.execute_graph('''g.addV(label, 'MPW1', 'mult_key', 'value0', 'mult_key', 'value1')''')[0]
         self.assertEqual(len(v.properties), 1)
         self.assertEqual(len(v.properties['mult_key']), 2)
         self.assertEqual(v.properties['mult_key'][0].value, 'value0')
         self.assertEqual(v.properties['mult_key'][1].value, 'value1')
 
         # single_with_one_value
-        v = s.execute_graph("graph.addVertex('single_key', 'value')")[0]
+        v = s.execute_graph('''v = graph.addVertex('SW1')
+                                 v.property('single_key', 'value')
+                                 v''')[0]
         self.assertEqual(len(v.properties), 1)
         self.assertEqual(len(v.properties['single_key']), 1)
         self.assertEqual(v.properties['single_key'][0].value, 'value')
 
         # single_with_two_values
         with self.assertRaises(InvalidRequest):
-            v = s.execute_graph("graph.addVertex('single_key', 'value0', 'single_key', 'value1')")[0]
-
-        # default_with_two_values
-        with self.assertRaises(InvalidRequest):
-            v = s.execute_graph("graph.addVertex('default_key', 'value0', 'default_key', 'value1')")[0]
+            v = s.execute_graph('''v = graph.addVertex('SW1')
+                                 v.property('single_key', 'value0', 'single_key', 'value1')
+                                 v''')[0]
 
     def test_vertex_property_properties(self):
         """
@@ -344,8 +348,11 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         @test_category dse graph
         """
         s = self.session
-
-        v = s.execute_graph('''v = graph.addVertex()
+        s.execute_graph("schema.propertyKey('k0').Text().ifNotExists().create();")
+        s.execute_graph("schema.propertyKey('k1').Text().ifNotExists().create();")
+        s.execute_graph("schema.propertyKey('key').Text().properties('k0', 'k1').ifNotExists().create();")
+        s.execute_graph("schema.vertexLabel('MLP').properties('key').ifNotExists().create();")
+        v = s.execute_graph('''v = graph.addVertex('MLP')
                                  v.property('key', 'value', 'k0', 'v0', 'k1', 'v1')
                                  v''')[0]
         self.assertEqual(len(v.properties), 1)
@@ -480,31 +487,59 @@ class BasicGraphTest(BasicGraphUnitTestCase):
 
     def _generate_line_graph(self, length):
         query_parts = []
+        query_parts.append(ALLOW_SCANS+';')
+        query_parts.append("schema.propertyKey('index').Int().ifNotExists().create();")
+        query_parts.append("schema.propertyKey('distance').Int().ifNotExists().create();")
+        query_parts.append("schema.vertexLabel('lp').properties('index').ifNotExists().create();")
+        query_parts.append("schema.edgeLabel('goesTo').properties('distance').connection('lp', 'lp').ifNotExists().create();")
         for index in range(0, length):
-            query_parts.append('''Vertex vertex{0} = graph.addVertex("index", {0}); '''.format(index))
+            query_parts.append('''Vertex vertex{0} = graph.addVertex(label, 'lp', 'index', {0}); '''.format(index))
             if index is not 0:
-                query_parts.append('''vertex{0}.addEdge("goesTo", vertex{1}, "distance", 5); '''.format(index-1,index))
+                query_parts.append('''vertex{0}.addEdge('goesTo', vertex{1}, 'distance', 5); '''.format(index-1,index))
         final_graph_generation_statement = "".join(query_parts)
         return final_graph_generation_statement
 
     def _generate_multi_field_graph(self):
-        to_run = ['''short s1 = 5000; graph.addVertex(label, "shortvertex", "shortvalue", s1);''',
-                 '''int i1 = 1000000000; graph.addVertex(label, "intvertex", "intvalue", i1);''',
-                 '''Integer i2 = 100000000; graph.addVertex(label, "intvertex2", "intvalue2", i2);''',
-                 '''long l1 = 9223372036854775807; graph.addVertex(label, "longvertex", "longvalue", l1);''',
-                 '''Long l2 = 100000000000000000L; graph.addVertex(label, "longvertex2", "longvalue2", l2);''',
-                 '''float f1 = 3.5f; graph.addVertex(label, "floatvertex", "floatvalue", f1);''',
-                 '''double d1 = 3.5e40; graph.addVertex(label, "doublevertex", "doublevalue", d1);''',
-                 '''Double d2 = 3.5e40d; graph.addVertex(label, "doublevertex2", "doublevalue2", d2);''']
+        to_run = [ALLOW_SCANS,
+                  '''schema.propertyKey('shortvalue').Smallint().ifNotExists().create();
+                     schema.vertexLabel('shortvertex').properties('shortvalue').ifNotExists().create();
+                     short s1 = 5000; graph.addVertex(label, "shortvertex", "shortvalue", s1);''',
+                  '''schema.propertyKey('intvalue').Int().ifNotExists().create();
+                     schema.vertexLabel('intvertex').properties('intvalue').ifNotExists().create();
+                     int i1 = 1000000000; graph.addVertex(label, "intvertex", "intvalue", i1);''',
+                  '''schema.propertyKey('intvalue2').Int().ifNotExists().create();
+                     schema.vertexLabel('intvertex2').properties('intvalue2').ifNotExists().create();
+                     Integer i2 = 100000000; graph.addVertex(label, "intvertex2", "intvalue2", i2);''',
+                  '''schema.propertyKey('longvalue').Bigint().ifNotExists().create();
+                     schema.vertexLabel('longvertex').properties('longvalue').ifNotExists().create();
+                     long l1 = 9223372036854775807; graph.addVertex(label, "longvertex", "longvalue", l1);''',
+                  '''schema.propertyKey('longvalue2').Bigint().ifNotExists().create();
+                     schema.vertexLabel('longvertex2').properties('longvalue2').ifNotExists().create();
+                     Long l2 = 100000000000000000L; graph.addVertex(label, "longvertex2", "longvalue2", l2);''',
+                  '''schema.propertyKey('floatvalue').Float().ifNotExists().create();
+                     schema.vertexLabel('floatvertex').properties('floatvalue').ifNotExists().create();
+                     float f1 = 3.5f; graph.addVertex(label, "floatvertex", "floatvalue", f1);''',
+                  '''schema.propertyKey('doublevalue').Double().ifNotExists().create();
+                     schema.vertexLabel('doublevertex').properties('doublevalue').ifNotExists().create();
+                     double d1 = 3.5e40; graph.addVertex(label, "doublevertex", "doublevalue", d1);''',
+                  '''schema.propertyKey('doublevalue2').Double().ifNotExists().create();
+                     schema.vertexLabel('doublevertex2').properties('doublevalue2').ifNotExists().create();
+                     Double d2 = 3.5e40d; graph.addVertex(label, "doublevertex2", "doublevalue2", d2);''']
 
         for run in to_run:
             self.session.execute_graph(run)
 
     def _generate_large_complex_graph(self, size):
-
-        to_run ='''int size = 2000;
+        to_run = '''schema.config().option('graph.schema_mode').set('development');
+            int size = 2000;
             List ids = new ArrayList();
-            Vertex v = graph.addVertex();
+            schema.propertyKey('ts').Int().single().ifNotExists().create();
+            schema.propertyKey('sin').Int().single().ifNotExists().create();
+            schema.propertyKey('cos').Int().single().ifNotExists().create();
+            schema.propertyKey('ii').Int().single().ifNotExists().create();
+            schema.vertexLabel('lcg').properties('ts', 'sin', 'cos', 'ii').ifNotExists().create();
+            schema.edgeLabel('linked').connection('lcg', 'lcg').ifNotExists().create();
+            Vertex v = graph.addVertex(label, 'lcg');
             v.property("ts", 100001);
             v.property("sin", 0);
             v.property("cos", 1);
@@ -512,7 +547,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
             ids.add(v.id());
             Random rand = new Random();
             for (int ii = 1; ii < size; ii++) {
-                v = graph.addVertex();
+                v = graph.addVertex(label, 'lcg');
                 v.property("ii", ii);
                 v.property("ts", 100001 + ii);
                 v.property("sin", Math.sin(ii/5.0));
