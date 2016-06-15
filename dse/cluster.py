@@ -149,6 +149,14 @@ class Session(Session):
             >>> for result in results:
             ...     print(result.value)  # defaults results are dse.graph.Result
         """
+        return self.execute_graph_async(query, parameters, trace, execution_profile).result()
+
+    def execute_graph_async(self, query, parameters=None, trace=False, execution_profile=EXEC_PROFILE_GRAPH_DEFAULT):
+        """
+        Execute the graph query and return a :class:`~.ResponseFuture` object which callbacks may be attached to for
+        asynchronous response delivery. You may also call :meth:`~.ResponseFuture.result()` to syncronously block for
+        results at any time.
+        """
         if not isinstance(query, SimpleGraphStatement):
             query = SimpleGraphStatement(query)
 
@@ -176,7 +184,7 @@ class Session(Session):
             self._target_analytics_master(future)
         else:
             future.send_request()
-        return future.result()
+        return future
 
     def _transform_params(self, parameters):
         if not isinstance(parameters, dict):
