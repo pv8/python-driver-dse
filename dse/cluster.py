@@ -18,6 +18,7 @@ from dse.util import Point, LineString, Polygon
 log = logging.getLogger(__name__)
 
 EXEC_PROFILE_GRAPH_DEFAULT = object()
+EXEC_PROFILE_GRAPH_SYSTEM_DEFAULT = object()
 EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT = object()
 
 if six.PY3:
@@ -53,7 +54,7 @@ class GraphExecutionProfile(ExecutionProfile):
 
     def __init__(self, load_balancing_policy=None, retry_policy=None,
                  consistency_level=ConsistencyLevel.LOCAL_ONE, serial_consistency_level=None,
-                 request_timeout=10.0, row_factory=graph_object_row_factory,
+                 request_timeout=30.0, row_factory=graph_object_row_factory,
                  graph_options=None):
         # TODO: make sure docs inherit, make a class docstring
         retry_policy = retry_policy or NeverRetryPolicy()
@@ -67,9 +68,8 @@ class GraphAnalyticsExecutionProfile(GraphExecutionProfile):
 
     def __init__(self, load_balancing_policy=None, retry_policy=None,
                  consistency_level=ConsistencyLevel.LOCAL_ONE, serial_consistency_level=None,
-                 request_timeout=30.0, row_factory=graph_object_row_factory,
+                 request_timeout=3600. * 24. * 7., row_factory=graph_object_row_factory,
                  graph_options=None):
-        # TODO: get new default timeouts
         load_balancing_policy = load_balancing_policy or HostTargetingPolicy(default_lbp_factory())
         super(GraphAnalyticsExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
                                                              serial_consistency_level, request_timeout, row_factory, graph_options)
@@ -91,6 +91,7 @@ class Cluster(Cluster):
                              "load_balancing_policy or default_retry_policy. Configure this in a profile instead.")
 
         self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_DEFAULT, GraphExecutionProfile())
+        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_SYSTEM_DEFAULT, GraphExecutionProfile(request_timeout=60. * 3.))
         self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT, GraphAnalyticsExecutionProfile())
         self._config_mode = _ConfigMode.PROFILES
 
