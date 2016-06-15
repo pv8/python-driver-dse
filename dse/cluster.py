@@ -60,7 +60,7 @@ class GraphExecutionProfile(ExecutionProfile):
         retry_policy = retry_policy or NeverRetryPolicy()
         super(GraphExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
                                                     serial_consistency_level, request_timeout, row_factory)
-        self.graph_options = graph_options or GraphOptions(graph_source=b'default',
+        self.graph_options = graph_options or GraphOptions(graph_source=b'g',
                                                            graph_language=b'gremlin-groovy')
 
 
@@ -71,6 +71,8 @@ class GraphAnalyticsExecutionProfile(GraphExecutionProfile):
                  request_timeout=3600. * 24. * 7., row_factory=graph_object_row_factory,
                  graph_options=None):
         load_balancing_policy = load_balancing_policy or HostTargetingPolicy(default_lbp_factory())
+        graph_options = graph_options or GraphOptions(graph_source=b'a',
+                                                      graph_language=b'gremlin-groovy')
         super(GraphAnalyticsExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
                                                              serial_consistency_level, request_timeout, row_factory, graph_options)
 
