@@ -194,6 +194,30 @@ class BasicDseAuthTest(unittest.TestCase):
         auth_provider = DSEGSSAPIAuthProvider(service='dse', qops=["auth"], resolve_host_name=False)
         self.assertRaises(NoHostAvailable, self.connect_and_query, auth_provider)
 
+    def test_connect_with_explicit_principal(self):
+        """
+        This tests will attempt to authenticate using valid and invalid user principals
+        @since 1.0.0
+        @jira_ticket PYTHON-574
+        @test_category dse auth
+        @expected_result Client principals should be used by the underlying mechanism
+
+        """
+
+        # Connect with valid principal
+        self.refresh_kerberos_tickets(self.cassandra_keytab, "cassandra@DATASTAX.COM", self.krb_conf)
+        auth_provider = DSEGSSAPIAuthProvider(service='dse', qops=["auth"], principal="cassandra@DATASTAX.COM")
+        rs = self.connect_and_query(auth_provider)
+        connections = [c for holders in self.cluster.get_connection_holders() for c in holders.get_connections()]
+
+        # Check to make sure our server_authenticator class is being set appropriate
+        for connection in connections:
+            self.assertTrue('DseAuthenticator' in connection.authenticator.server_authenticator_class)
+
+        # Use invalid principal
+        auth_provider = DSEGSSAPIAuthProvider(service='dse', qops=["auth"], principal="notauser@DATASTAX.COM")
+        self.assertRaises(NoHostAvailable, self.connect_and_query, auth_provider)
+
 
 def clear_kerberos_tickets():
         subprocess.call(['kdestroy'], shell=False)
