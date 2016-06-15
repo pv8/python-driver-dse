@@ -151,7 +151,7 @@ class BasicDseAuthTest(unittest.TestCase):
 
         """
         self.refresh_kerberos_tickets(self.cassandra_keytab, "cassandra@DATASTAX.COM", self.krb_conf)
-        auth_provider = DSEGSSAPIAuthProvider(service='dse', qops=['auth'])
+        auth_provider = DSEGSSAPIAuthProvider()
         rs = self.connect_and_query(auth_provider)
         self.assertIsNotNone(rs)
         connections = [c for holders in self.cluster.get_connection_holders() for c in holders.get_connections()]
