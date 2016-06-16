@@ -67,11 +67,14 @@ class PolygonType(CassandraType):
         buf = io.BytesIO(PolygonType._type)
         buf.seek(0, 2)
 
-        num_rings = 1 + len(val.interiors)
-        buf.write(PolygonType._platform_ring_count(num_rings))
-        for ring in chain((val.exterior,), val.interiors):
-            num_points = len(ring.coords)
-            buf.write(struct.pack('=I' + 'dd' * num_points, num_points, *(d for coord in ring.coords for d in coord)))
+        if val.exterior.coords:
+            num_rings = 1 + len(val.interiors)
+            buf.write(PolygonType._platform_ring_count(num_rings))
+            for ring in chain((val.exterior,), val.interiors):
+                num_points = len(ring.coords)
+                buf.write(struct.pack('=I' + 'dd' * num_points, num_points, *(d for coord in ring.coords for d in coord)))
+        else:
+            buf.write(PolygonType._platform_ring_count(0))
         return buf.getvalue()
 
     @staticmethod
