@@ -6,11 +6,10 @@ import six
 from six.moves import range
 import struct
 from cassandra.cqltypes import CassandraType
-from cassandra.util import is_little_endian as _platform_is_le
 from dse.marshal import point_be, point_le
 from dse.util import Point, LineString, Polygon
 
-_endian_flag = 1 if _platform_is_le else 0
+_little_endian_flag = 1  # we always serialize LE
 
 _ord = ord if six.PY2 else lambda x: x
 
@@ -24,12 +23,11 @@ class WKBGeometryType(object):
 class PointType(CassandraType):
     typename = 'PointType'
 
-    _platform_point = point_le if _platform_is_le else point_be
-    _type = struct.pack('=BI', _endian_flag, WKBGeometryType.POINT)
+    _type = struct.pack('<BI', _little_endian_flag, WKBGeometryType.POINT)
 
     @staticmethod
     def serialize(val, protocol_version):
-        return PointType._type + PointType._platform_point.pack(val.x, val.y)
+        return PointType._type + point_le.pack(val.x, val.y)
 
     @staticmethod
     def deserialize(byts, protocol_version):
@@ -41,12 +39,12 @@ class PointType(CassandraType):
 class LineStringType(CassandraType):
     typename = 'LineStringType'
 
-    _type = struct.pack('=BI', _endian_flag, WKBGeometryType.LINESTRING)
+    _type = struct.pack('<BI', _little_endian_flag, WKBGeometryType.LINESTRING)
 
     @staticmethod
     def serialize(val, protocol_version):
         num_points = len(val.coords)
-        return LineStringType._type + struct.pack('=I' + 'dd' * num_points, num_points, *(d for coords in val.coords for d in coords))
+        return LineStringType._type + struct.pack('<I' + 'dd' * num_points, num_points, *(d for coords in val.coords for d in coords))
 
     @staticmethod
     def deserialize(byts, protocol_version):
@@ -59,8 +57,8 @@ class LineStringType(CassandraType):
 class PolygonType(CassandraType):
     typename = 'PolygonType'
 
-    _type = struct.pack('=BI', _endian_flag, WKBGeometryType.POLYGON)
-    _platform_ring_count = struct.Struct('=I').pack
+    _type = struct.pack('<BI', _little_endian_flag, WKBGeometryType.POLYGON)
+    _ring_count = struct.Struct('<I').pack
 
     @staticmethod
     def serialize(val, protocol_version):
@@ -69,12 +67,12 @@ class PolygonType(CassandraType):
 
         if val.exterior.coords:
             num_rings = 1 + len(val.interiors)
-            buf.write(PolygonType._platform_ring_count(num_rings))
+            buf.write(PolygonType._ring_count(num_rings))
             for ring in chain((val.exterior,), val.interiors):
                 num_points = len(ring.coords)
-                buf.write(struct.pack('=I' + 'dd' * num_points, num_points, *(d for coord in ring.coords for d in coord)))
+                buf.write(struct.pack('<I' + 'dd' * num_points, num_points, *(d for coord in ring.coords for d in coord)))
         else:
-            buf.write(PolygonType._platform_ring_count(0))
+            buf.write(PolygonType._ring_count(0))
         return buf.getvalue()
 
     @staticmethod
