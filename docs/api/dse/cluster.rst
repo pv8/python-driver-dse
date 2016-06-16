@@ -5,12 +5,23 @@
 
 .. autoclass:: Cluster ()
 
+.. autoclass:: GraphExecutionProfile
+   :members:
+
+.. autoclass:: GraphAnalyticsExecutionProfile
+   :members:
+
+.. autodata:: EXEC_PROFILE_GRAPH_DEFAULT
+   :annotation:
+
+.. autodata:: EXEC_PROFILE_GRAPH_SYSTEM_DEFAULT
+   :annotation:
+
+.. autodata:: EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT
+   :annotation:
+
 .. autoclass:: Session ()
 
-   .. autoattribute:: default_graph_options
+   .. automethod:: execute_graph(statement[, parameters][, trace][, execution_profile])
 
-   .. autoattribute:: default_graph_row_factory
-
-   .. autoattribute:: default_graph_timeout
-
-   .. automethod:: execute_graph(statement[, parameters][, timeout][, trace][, row_factory])
+   .. automethod:: execute_graph_async(statement[, parameters][, trace][, execution_profile])

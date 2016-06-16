@@ -9,7 +9,7 @@ from mock import Mock
 from cassandra.pool import Host
 from cassandra.policies import RoundRobinPolicy
 
-from dse.policies import HostTargetingPolicy
+from dse.policies import DSELoadBalancingPolicy
 
 
 class ClusterMetaMock(object):
@@ -20,12 +20,12 @@ class ClusterMetaMock(object):
         return self.hosts.get(addr)
 
 
-class HostTargetingPolicyTest(unittest.TestCase):
+class DSELoadBalancingPolicyTest(unittest.TestCase):
 
     def test_no_target(self):
         node_count = 4
         hosts = list(range(node_count))
-        policy = HostTargetingPolicy(RoundRobinPolicy())
+        policy = DSELoadBalancingPolicy(RoundRobinPolicy())
         policy.populate(Mock(metadata=ClusterMetaMock()), hosts)
         for _ in range(node_count):
             query_plan = list(policy.make_query_plan(None, Mock(target_host=None)))
@@ -34,7 +34,7 @@ class HostTargetingPolicyTest(unittest.TestCase):
     def test_status_updates(self):
         node_count = 4
         hosts = list(range(node_count))
-        policy = HostTargetingPolicy(RoundRobinPolicy())
+        policy = DSELoadBalancingPolicy(RoundRobinPolicy())
         policy.populate(Mock(metadata=ClusterMetaMock()), hosts)
         policy.on_down(0)
         policy.on_remove(1)
@@ -57,7 +57,7 @@ class HostTargetingPolicyTest(unittest.TestCase):
     def test_target_no_host(self):
         node_count = 4
         hosts = list(range(node_count))
-        policy = HostTargetingPolicy(RoundRobinPolicy())
+        policy = DSELoadBalancingPolicy(RoundRobinPolicy())
         policy.populate(Mock(metadata=ClusterMetaMock()), hosts)
         query_plan = list(policy.make_query_plan(None, Mock(target_host='127.0.0.1')))
         self.assertEqual(sorted(query_plan), hosts)
@@ -67,7 +67,7 @@ class HostTargetingPolicyTest(unittest.TestCase):
         hosts = [Host(i, Mock()) for i in range(node_count)]
         target_host = hosts[1]
 
-        policy = HostTargetingPolicy(RoundRobinPolicy())
+        policy = DSELoadBalancingPolicy(RoundRobinPolicy())
         policy.populate(Mock(metadata=ClusterMetaMock({'127.0.0.1': target_host})), hosts)
         query_plan = list(policy.make_query_plan(None, Mock(target_host='127.0.0.1')))
         self.assertEqual(sorted(query_plan), hosts)
@@ -83,7 +83,7 @@ class HostTargetingPolicyTest(unittest.TestCase):
         target_host = hosts[1]
         target_host.is_up = True
 
-        policy = HostTargetingPolicy(RoundRobinPolicy())
+        policy = DSELoadBalancingPolicy(RoundRobinPolicy())
         policy.populate(Mock(metadata=ClusterMetaMock({'127.0.0.1': target_host})), hosts)
         for _ in range(10):
             query_plan = list(policy.make_query_plan(None, Mock(target_host='127.0.0.1')))

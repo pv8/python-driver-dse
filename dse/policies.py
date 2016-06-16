@@ -1,7 +1,5 @@
 # Copyright 2016 DataStax, Inc.
-import itertools
-
-from cassandra.policies import LoadBalancingPolicy, HostDistance, RetryPolicy
+from cassandra.policies import LoadBalancingPolicy, RetryPolicy
 
 
 class WrapperPolicy(LoadBalancingPolicy):
@@ -28,7 +26,7 @@ class WrapperPolicy(LoadBalancingPolicy):
         return self._child_policy.on_remove(*args, **kwargs)
 
 
-class HostTargetingPolicy(WrapperPolicy):
+class DSELoadBalancingPolicy(WrapperPolicy):
     """
     A :class:`.LoadBalancingPolicy` wrapper that adds the ability to target a specific host first.
 

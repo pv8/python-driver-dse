@@ -10,53 +10,66 @@ from cassandra.query import tuple_factory
 from dse import _core_driver_target_version, _use_any_core_driver_version, __version__ as dse_driver_version
 import dse.cqltypes  # unsued here, imported to cause type registration
 from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory, _request_timeout_key
-from dse.policies import HostTargetingPolicy, NeverRetryPolicy
+from dse.policies import DSELoadBalancingPolicy, NeverRetryPolicy
 from dse.query import HostTargetingStatement
 from dse.util import Point, LineString, Polygon
-
-
-log = logging.getLogger(__name__)
-
-EXEC_PROFILE_GRAPH_DEFAULT = object()
-EXEC_PROFILE_GRAPH_SYSTEM_DEFAULT = object()
-EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT = object()
 
 if six.PY3:
     long = int
 
+log = logging.getLogger(__name__)
+
+EXEC_PROFILE_GRAPH_DEFAULT = object()
+"""
+Key for the default graph execution profile, used when no other profile is selected in
+``Session.execute_graph(execution_profile)``.
+
+Use this as the key in `Cluster(execution_profiles) <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Cluster>`_
+to override the default graph profile.
+"""
+
+EXEC_PROFILE_GRAPH_SYSTEM_DEFAULT = object()
+"""
+Key for the default graph system execution profile. This can be used for graph statements using the DSE graph
+system API.
+
+Selected using ``Session.execute_graph(execution_profile=EXEC_PROFILE_GRAPH_SYSTEM_DEFAULT)``.
+"""
+
+EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT = object()
+"""
+Key for the default graph analytics execution profile. This can be used for graph statements intended to
+use Spark/analytics as the traversal source.
+
+Selected using ``Session.execute_graph(execution_profile=EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT)``.
+"""
 
 class GraphExecutionProfile(ExecutionProfile):
-
     graph_options = None
     """
     :class:`.GraphOptions` to use with this execution
 
     Default options for graph queries, initialized as follows by default::
 
-        GraphOptions(graph_source=b'default',
+        GraphOptions(graph_source=b'g',
                      graph_language=b'gremlin-groovy')
 
     See dse.graph.GraphOptions
-    """
-
-    request_factory = None
-    """
-    TODO
-    I think this is "wait forever now"
-    """
-
-    row_factory = None
-    """
-    Row factory used for graph results.
-
-    The default is dse.graph.graph_result_row_factory.
     """
 
     def __init__(self, load_balancing_policy=None, retry_policy=None,
                  consistency_level=ConsistencyLevel.LOCAL_ONE, serial_consistency_level=None,
                  request_timeout=30.0, row_factory=graph_object_row_factory,
                  graph_options=None):
-        # TODO: make sure docs inherit, make a class docstring
+        """
+        Default execution profile for graph execution.
+
+        See `ExecutionProfile <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.ExecutionProfile>`_
+        for base attributes.
+
+        In addition to default parameters shown in the signature, this profile also defaults ``retry_policy`` to
+        :class:`dse.policies.NeverRetryPolicy`.
+        """
         retry_policy = retry_policy or NeverRetryPolicy()
         super(GraphExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
                                                     serial_consistency_level, request_timeout, row_factory)
@@ -70,7 +83,16 @@ class GraphAnalyticsExecutionProfile(GraphExecutionProfile):
                  consistency_level=ConsistencyLevel.LOCAL_ONE, serial_consistency_level=None,
                  request_timeout=3600. * 24. * 7., row_factory=graph_object_row_factory,
                  graph_options=None):
-        load_balancing_policy = load_balancing_policy or HostTargetingPolicy(default_lbp_factory())
+        """
+        Execution profile with timeout and load balancing appropriate for graph analytics queries.
+
+        See also :class:`~.GraphExecutionPolicy`.
+
+        In addition to default parameters shown in the signature, this profile also defaults ``retry_policy`` to
+        :class:`dse.policies.NeverRetryPolicy`, and ``load_balancing_policy`` to one that targets the current Spark
+        master.
+        """
+        load_balancing_policy = load_balancing_policy or DSELoadBalancingPolicy(default_lbp_factory())
         graph_options = graph_options or GraphOptions(graph_source=b'a',
                                                       graph_language=b'gremlin-groovy')
         super(GraphAnalyticsExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
@@ -81,7 +103,9 @@ class Cluster(Cluster):
     """
     Cluster extending `cassandra.cluster.Cluster <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Cluster>`_.
     The API is identical, except that it returns a :class:`dse.cluster.Session` (see below).
-    The default load_balancing_policy adds master host targeting for graph analytics queries.
+
+    It also uses the new `Execution Profile <http://datastax.github.io/python-driver/execution_profiles.html>`_ API, so
+    legacy parameters are disallowed.
     """
     def __init__(self, *args, **kwargs):
         self._validate_core_version()
@@ -92,9 +116,10 @@ class Cluster(Cluster):
             raise ValueError("DSE Cluster uses execution profiles and should not specify legacy parameters "
                              "load_balancing_policy or default_retry_policy. Configure this in a profile instead.")
 
-        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_DEFAULT, GraphExecutionProfile())
-        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_SYSTEM_DEFAULT, GraphExecutionProfile(request_timeout=60. * 3.))
-        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT, GraphAnalyticsExecutionProfile())
+        lbp = DSELoadBalancingPolicy(default_lbp_factory())
+        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_DEFAULT, GraphExecutionProfile(load_balancing_policy=lbp))
+        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_SYSTEM_DEFAULT, GraphExecutionProfile(load_balancing_policy=lbp, request_timeout=60. * 3.))
+        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT, GraphAnalyticsExecutionProfile(load_balancing_policy=lbp))
         self._config_mode = _ConfigMode.PROFILES
 
     def _new_session(self):
@@ -139,25 +164,15 @@ class Session(Session):
 
         `parameters` is dict of named parameters to bind. The values must be
         JSON-serializable.
-        (TBD: make this customizable)
 
-        `execution_profile`: TODO
-
-        Example usage::
-
-            >>> session = cluster.connect()
-            >>> statement = GraphStatement('x.v()')
-            >>> statement.options.graph_binding = 'x'  # non-standard option set
-            >>> results = session.execute_graph(statement)
-            >>> for result in results:
-            ...     print(result.value)  # defaults results are dse.graph.Result
+        `execution_profile`: Selects an execution profile for the request.
         """
         return self.execute_graph_async(query, parameters, trace, execution_profile).result()
 
     def execute_graph_async(self, query, parameters=None, trace=False, execution_profile=EXEC_PROFILE_GRAPH_DEFAULT):
         """
-        Execute the graph query and return a :class:`~.ResponseFuture` object which callbacks may be attached to for
-        asynchronous response delivery. You may also call :meth:`~.ResponseFuture.result()` to syncronously block for
+        Execute the graph query and return a `ResponseFuture <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.ResponseFuture.result>`_
+        object which callbacks may be attached to for asynchronous response delivery. You may also call ``ResponseFuture.result()`` to synchronously block for
         results at any time.
         """
         if not isinstance(query, SimpleGraphStatement):
@@ -183,7 +198,7 @@ class Session(Session):
         future.message._query_params = graph_parameters
         future._protocol_handler = self.client_protocol_handler
 
-        if options.is_analytics_source and isinstance(execution_profile.load_balancing_policy, HostTargetingPolicy):
+        if options.is_analytics_source and isinstance(execution_profile.load_balancing_policy, DSELoadBalancingPolicy):
             self._target_analytics_master(future)
         else:
             future.send_request()
