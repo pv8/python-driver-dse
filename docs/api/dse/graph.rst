@@ -21,6 +21,19 @@
 
    .. autoattribute:: graph_write_consistency_level
 
+   .. autoattribute:: is_default_source
+
+   .. autoattribute:: is_analytics_source
+
+   .. autoattribute:: is_graph_source
+
+   .. automethod:: set_source_default
+
+   .. automethod:: set_source_analytics
+
+   .. automethod:: set_source_graph
+
+
 .. autoclass:: SimpleGraphStatement
    :members:
 
