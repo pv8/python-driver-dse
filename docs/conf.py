@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 #
-# Cassandra Driver documentation build configuration file, created by
+# Licensed under the DataStax DSE Driver License;
+# you may not use this file except in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+# http://www.datastax.com/terms/datastax-dse-driver-license-terms
+#
+# DSE Driver documentation build configuration file, created by
 # sphinx-quickstart on Mon Jul  1 11:40:09 2013.
 #
 # This file is execfile()d with the current directory set to its containing dir.
