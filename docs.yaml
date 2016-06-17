@@ -2,7 +2,7 @@ title: DataStax Enterprise Python Driver
 summary: DataStax Enterprise Python Driver Documentation
 output: docs/_build/
 sections:
-  - title: SECTION TITLE
-    prefix: 'MYPREFIX'
+  - title: N/A
+    prefix: /
     type: sphinx
     directory: docs

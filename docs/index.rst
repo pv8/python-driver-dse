@@ -40,9 +40,3 @@ Feedback/Issues
 Please report any bugs and make any feature requests on the `JIRA <https://datastax-oss.atlassian.net/browse/PYTHON>`_
 issue tracker. You may also engage `DataStax support <https://support.datastax.com>`_ with any issues or feedback.
 
-Indices and Tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
