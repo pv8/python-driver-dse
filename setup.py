@@ -35,8 +35,13 @@ class DocCommand(Command):
         pass
 
     def run(self):
-        path = "dse/doc"
+        path = "docs/_build/%s" % __version__
         mode = "html"
+
+        try:
+            os.makedirs(path)
+        except:
+            pass
 
         import os
         import subprocess
@@ -65,7 +70,7 @@ setup(
     version=__version__,
     description='DataStax Enterprise extensions for cassandra-driver',
     long_description=long_description,
-    packages=['dse', 'dse.doc'],
+    packages=['dse'],
     keywords='cassandra,dse,graph',
     include_package_data=True,
     install_requires=dependencies,
