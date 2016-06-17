@@ -11,7 +11,7 @@ Contents
     How to install the extension.
 
 :doc:`getting_started`
-    First steps of connecting to DSE and executing queries.
+    Covers upgrade from core driver, and first steps of connecting to DSE and executing queries.
 
 :doc:`auth`
     Example configuring DSE authentication
