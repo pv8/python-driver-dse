@@ -49,7 +49,7 @@ class DSEGSSAPIAuthProvider(AuthProvider):
             creating a new authenticator. Default is ``True``, which will resolve, or return the numeric address if there is no PTR
             record. Setting ``False`` creates the authenticator with the numeric address known by Cassandra
         :param properties: additional keyword properties to pass for the ``puresasl.mechanisms.GSSAPIMechanism`` class.
-            Presently, 'principal' is the only one referenced in the ``pure-sasl`` implementation
+            Presently, 'principal' (user) is the only one referenced in the ``pure-sasl`` implementation
         """
         if not _have_puresasl:
             raise ImportError('The puresasl library has not been installed')
