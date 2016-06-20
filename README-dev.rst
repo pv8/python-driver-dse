@@ -30,14 +30,7 @@ Dependencies
 ------------
 Sphinx
 ~~~~~~
-Sphinx is required to build the docs. You probably want to install through apt,
-if possible::
-
-    sudo apt-get install python-sphinx
-
-pip may also work::
-
-    sudo pip install -U Sphinx
+Installed as described in core document.
 
 Documentor
 ~~~~~~~~~~
