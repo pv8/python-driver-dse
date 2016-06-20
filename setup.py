@@ -15,7 +15,6 @@ ez_setup.use_setuptools()
 
 from setuptools import setup
 from distutils.cmd import Command
-from distutils.spawn import find_executable
 import os
 
 long_description = ""
@@ -35,31 +34,28 @@ class DocCommand(Command):
     def finalize_options(self):
         pass
 
-    def _get_output_dir(self):
-        with open('docs.yaml') as f:
-            for line in f:
-                if line.startswith('output'):
-                    return line.split()[1]
-
     def run(self):
+        path = "docs/_build/%s" % __version__
+        mode = "html"
 
-        if not find_executable('documentor'):
-            raise RuntimeError("'documentor' command not found in path")
+        try:
+            os.makedirs(path)
+        except:
+            pass
 
+        import os
         import subprocess
         try:
             output = subprocess.check_output(
-                ["documentor", "."],
+                ["sphinx-build", "-b", mode, "docs", path],
                 stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as exc:
-            raise RuntimeError("Documentation step failed: %s: %s" % (exc, exc.output))
+            raise RuntimeError("Documentation step '%s' failed: %s: %s" % (mode, exc, exc.output))
         else:
             print(output)
 
-        path = self._get_output_dir()
-
         print("")
-        print("Documentation step performed, results here:")
+        print("Documentation step '%s' performed, results here:" % mode)
         print("   file://%s/%s/index.html" % (os.path.dirname(os.path.realpath(__file__)), path))
 
 # not officially supported, but included for flexibility in test environments
