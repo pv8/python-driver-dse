@@ -2,6 +2,14 @@ Most notes on releasing and testing are the same as those in the core driver `RE
 
 Here we discuss any differences.
 
+Releases
+========
+After the release has been tagged, add a section to docs.yaml with the new tag ref::
+
+    versions:
+      - name: <version name>
+        ref: <release tag>
+
 Running the Tests
 =================
 Test invocation is the same as in the core driver. However, these tests use some packages from the base test suite, so
