@@ -1,5 +1,5 @@
-DataStax Enterprise Extension for the DataStax Python Cassandra Driver
-======================================================================
+DataStax Enterprise Python Driver
+=================================
 This package builds on the DataStax Python Driver for Apache Cassandra,
 and provides extended functionality for DataStax Enterprise (DSE).
 
@@ -37,11 +37,6 @@ Contents
 
 Feedback/Issues
 ---------------
-Please report any issues or provide feedback in the `Early Adopter Program (EAP) forum <http://eap.datastax.com/phpbb/>`_.
+Please report any bugs and make any feature requests on the `JIRA <https://datastax-oss.atlassian.net/browse/PYTHON>`_
+issue tracker. You may also engage `DataStax support <https://support.datastax.com>`_ with any issues or feedback.
 
-Indices and Tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
