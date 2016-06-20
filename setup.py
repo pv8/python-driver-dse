@@ -17,7 +17,6 @@ from setuptools import setup
 from distutils.cmd import Command
 from distutils.spawn import find_executable
 import os
-import shutil
 
 long_description = ""
 with open("README.rst") as f:
@@ -47,14 +46,6 @@ class DocCommand(Command):
         if not find_executable('documentor'):
             raise RuntimeError("'documentor' command not found in path")
 
-        path = self._get_output_dir()
-
-        try:
-            shutil.rmtree(path)
-        except:
-            pass
-
-        import os
         import subprocess
         try:
             output = subprocess.check_output(
@@ -64,6 +55,8 @@ class DocCommand(Command):
             raise RuntimeError("Documentation step failed: %s: %s" % (exc, exc.output))
         else:
             print(output)
+
+        path = self._get_output_dir()
 
         print("")
         print("Documentation step performed, results here:")
