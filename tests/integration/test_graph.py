@@ -582,6 +582,70 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         self.session.execute_graph(to_run, execution_profile=prof)
 
 
+class GraphTimoutTests(BasicGraphUnitTestCase):
+
+        def test_server_timeout(self):
+            """
+            Tests that by default the client should wait indefinitely for server timeouts
+
+            @since 1.0.0
+            @jira_ticket PYTHON-589
+
+            @test_category dse graph
+            """
+            graph_source = "test_timeout_1"
+            default_profile = self.cluster.profile_manager.profiles[EXEC_PROFILE_GRAPH_DEFAULT]
+            default_profile.graph_options.graph_source = graph_source
+            desired_timeout = 1000
+            to_run = '''graph.schema().config().option("graph.traversal_sources.{0}.evaluation_timeout").set('{1} ms')'''.format(graph_source, desired_timeout)
+            self.session.execute_graph(to_run)
+            with self.assertRaises(InvalidRequest) as ir:
+                self.session.execute_graph("java.util.concurrent.TimeUnit.MILLISECONDS.sleep(35000L);1+1")
+            self.assertTrue("Script evaluation exceeded the configured threshold of 1000" in str(ir.exception))
+
+        def test_request_timeout_less_then_server(self):
+            """
+            Tests that with explicit request_timeouts set, that a server timeout is honored if it's relieved prior to the
+            client timeout
+
+            @since 1.0.0
+            @jira_ticket PYTHON-589
+
+            @test_category dse graph
+            """
+            graph_source = "test_timeout_2"
+            default_profile = self.cluster.profile_manager.profiles[EXEC_PROFILE_GRAPH_DEFAULT]
+            default_profile.graph_options.graph_source = graph_source
+            desired_timeout = 1000
+            prof = self.session.execution_profile_clone_update(EXEC_PROFILE_GRAPH_DEFAULT, request_timeout=32)
+            to_run = '''graph.schema().config().option("graph.traversal_sources.{0}.evaluation_timeout").set('{1} ms')'''.format(graph_source, desired_timeout)
+            self.session.execute_graph(to_run, execution_profile=prof)
+            with self.assertRaises(InvalidRequest) as ir:
+                self.session.execute_graph("java.util.concurrent.TimeUnit.MILLISECONDS.sleep(35000L);1+1", execution_profile=prof)
+            self.assertTrue("Script evaluation exceeded the configured threshold of 1000" in str(ir.exception))
+
+        def test_server_timeout_less_then_request(self):
+            """
+            Tests that with explicit request_timeouts set, that a client timeout is honored if it's triggered prior to the
+            server sending a timeout.
+
+            @since 1.0.0
+            @jira_ticket PYTHON-589
+
+            @test_category dse graph
+            """
+            graph_source = "test_timeout_3"
+            default_profile = self.cluster.profile_manager.profiles[EXEC_PROFILE_GRAPH_DEFAULT]
+            default_profile.graph_options.graph_source = graph_source
+            server_timeout = 10000
+            prof = self.session.execution_profile_clone_update(EXEC_PROFILE_GRAPH_DEFAULT, request_timeout=1)
+            to_run = '''graph.schema().config().option("graph.traversal_sources.{0}.evaluation_timeout").set('{1} ms')'''.format(graph_source, server_timeout)
+            self.session.execute_graph(to_run, execution_profile=prof)
+            with self.assertRaises(OperationTimedOut) as oto:
+                self.session.execute_graph("java.util.concurrent.TimeUnit.MILLISECONDS.sleep(35000L);1+1", execution_profile=prof)
+            self.assertTrue("Client request timeout" in str(oto.exception))
+
+
 class GraphProfileTests(BasicGraphUnitTestCase):
 
         def test_graph_profile(self):
