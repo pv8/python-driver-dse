@@ -35,6 +35,8 @@ class GraphOptions(object):
 
     def __init__(self, **kwargs):
         self._graph_options = {}
+        kwargs.setdefault('graph_source', 'g')
+        kwargs.setdefault('graph_language', 'gremlin-groovy')
         for attr, value in six.iteritems(kwargs):
             setattr(self, attr, value)
 
