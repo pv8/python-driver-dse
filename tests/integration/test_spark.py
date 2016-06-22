@@ -8,6 +8,7 @@
 # http://www.datastax.com/terms/datastax-dse-driver-license-terms
 import logging
 
+from dse.cluster import EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT
 from dse.graph import (SimpleGraphStatement)
 from tests.integration import BasicGraphUnitTestCase, use_singledc_wth_graph_and_spark, generate_classic, find_spark_master
 log = logging.getLogger(__name__)
@@ -34,7 +35,6 @@ class SparkLBTests(BasicGraphUnitTestCase):
         # Run multipltle times to ensure we don't round robin
         for i in range(3):
             to_run = SimpleGraphStatement("g.V().count()")
-            to_run.options.set_source_analytics()
-            rs = self.session.execute_graph(to_run)
+            rs = self.session.execute_graph(to_run, execution_profile=EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT)
             self.assertEqual(rs[0].value, 6)
             self.assertEqual(rs.response_future._current_host.address, spark_master)

@@ -381,19 +381,16 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         self.assertEqual(p.value, 'value')
         self.assertEqual(p.properties, {'k0': 'v0', 'k1': 'v1'})
 
-    def test_statement_graph_options(self):
+    def test_profile_graph_options(self):
         s = self.session
         statement = SimpleGraphStatement("true")
-        statement.options.graph_name = self.graph_name
-        self.assertTrue(s.execute_graph(statement)[0].value)
+        ep = self.session.execution_profile_clone_update(EXEC_PROFILE_GRAPH_DEFAULT)
+        self.assertTrue(s.execute_graph(statement, execution_profile=ep)[0].value)
 
         # bad graph name to verify it's passed
-        statement.options.graph_name = "definitely_not_correct"
-        self.assertRaises(ServerError, s.execute_graph, statement)
-
-        # removing makes it use the correct default
-        del statement.options.graph_name
-        self.assertTrue(s.execute_graph(statement)[0].value)
+        ep.graph_options = ep.graph_options.copy()
+        ep.graph_options.graph_name = "definitely_not_correct"
+        self.assertRaises(ServerError, s.execute_graph, statement, execution_profile=ep)
 
     def test_execute_graph_timeout(self):
         s = self.session
@@ -582,7 +579,7 @@ class BasicGraphTest(BasicGraphUnitTestCase):
         self.session.execute_graph(to_run, execution_profile=prof)
 
 
-class GraphTimoutTests(BasicGraphUnitTestCase):
+class GraphTimeoutTests(BasicGraphUnitTestCase):
 
         def test_server_timeout(self):
             """
@@ -594,13 +591,15 @@ class GraphTimoutTests(BasicGraphUnitTestCase):
             @test_category dse graph
             """
             graph_source = "test_timeout_1"
-            default_profile = self.cluster.profile_manager.profiles[EXEC_PROFILE_GRAPH_DEFAULT]
-            default_profile.graph_options.graph_source = graph_source
+            ep = self.session.execution_profile_clone_update(EXEC_PROFILE_GRAPH_DEFAULT)
+            ep.graph_options = ep.graph_options.copy()
+            ep.graph_options.graph_source = graph_source
+
             desired_timeout = 1000
             to_run = '''graph.schema().config().option("graph.traversal_sources.{0}.evaluation_timeout").set('{1} ms')'''.format(graph_source, desired_timeout)
             self.session.execute_graph(to_run)
             with self.assertRaises(InvalidRequest) as ir:
-                self.session.execute_graph("java.util.concurrent.TimeUnit.MILLISECONDS.sleep(35000L);1+1")
+                self.session.execute_graph("java.util.concurrent.TimeUnit.MILLISECONDS.sleep(35000L);1+1", execution_profile=ep)
             self.assertTrue("Script evaluation exceeded the configured threshold of 1000" in str(ir.exception))
 
         def test_request_timeout_less_then_server(self):

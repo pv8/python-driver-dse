@@ -195,8 +195,6 @@ class Session(Session):
             options = execution_profile.graph_options.copy()
         except AttributeError:
             raise ValueError("Execution profile for graph queries must derive from GraphExecutionProfile, and provide graph_options")
-        options.update(query.options)
-        # TODO: if we commit to Exec profiles, we shouldn't have graph options on the statement
 
         custom_payload = options.get_options_map()
         custom_payload[_request_timeout_key] = int64_pack(long(execution_profile.request_timeout * 1000))

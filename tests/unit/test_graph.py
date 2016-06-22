@@ -235,7 +235,7 @@ class GraphOptionTests(unittest.TestCase):
     def test_init(self):
         opts = GraphOptions(**self.api_params)
         self._verify_api_params(opts, self.api_params)
-        self._verify_api_params(GraphOptions(), {'graph_source': six.b('g'), 'graph_language': six.b('gremlin-groovy')})
+        self._verify_api_params(GraphOptions(), {'graph_source': 'g', 'graph_language': 'gremlin-groovy'})
 
     def test_update(self):
         opts = GraphOptions(**self.api_params)
@@ -308,8 +308,8 @@ class GraphOptionTests(unittest.TestCase):
 
         # mapping from base
         opt_map = opts.get_options_map()
-        self.assertEqual(opt_map['graph-read-consistency'], ConsistencyLevel.value_to_name[read_cl])
-        self.assertEqual(opt_map['graph-write-consistency'], ConsistencyLevel.value_to_name[write_cl])
+        self.assertEqual(opt_map['graph-read-consistency'], six.b(ConsistencyLevel.value_to_name[read_cl]))
+        self.assertEqual(opt_map['graph-write-consistency'], six.b(ConsistencyLevel.value_to_name[write_cl]))
 
         # empty by default
         new_opts = GraphOptions()
@@ -319,8 +319,8 @@ class GraphOptionTests(unittest.TestCase):
 
         # set from other
         opt_map = new_opts.get_options_map(opts)
-        self.assertEqual(opt_map['graph-read-consistency'], ConsistencyLevel.value_to_name[read_cl])
-        self.assertEqual(opt_map['graph-write-consistency'], ConsistencyLevel.value_to_name[write_cl])
+        self.assertEqual(opt_map['graph-read-consistency'], six.b(ConsistencyLevel.value_to_name[read_cl]))
+        self.assertEqual(opt_map['graph-write-consistency'], six.b(ConsistencyLevel.value_to_name[write_cl]))
 
     def test_graph_source_convenience_attributes(self):
         opts = GraphOptions()

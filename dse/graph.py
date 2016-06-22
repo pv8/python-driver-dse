@@ -126,16 +126,8 @@ class SimpleGraphStatement(SimpleStatement):
     Simple graph statement for :meth:`.Session.execute_graph`.
     Takes the same parameters as `cassandra.query.SimpleStatement <http://datastax.github.io/python-driver/api/cassandra/query.html#cassandra.query.SimpleStatement>`_
     """
-
-    options = None
-    """
-    :class:`~.GraphOptions` for this statement.
-    Any attributes set here override the :class:`dse.cluster.Session` defaults.
-    """
-
     def __init__(self, *args, **kwargs):
         super(SimpleGraphStatement, self).__init__(*args, **kwargs)
-        self.options = GraphOptions()
 
 
 def single_object_row_factory(column_names, rows):
