@@ -235,7 +235,7 @@ class GraphOptionTests(unittest.TestCase):
     def test_init(self):
         opts = GraphOptions(**self.api_params)
         self._verify_api_params(opts, self.api_params)
-        self._verify_api_params(GraphOptions(), {})
+        self._verify_api_params(GraphOptions(), {'graph_source': six.b('g'), 'graph_language': six.b('gremlin-groovy')})
 
     def test_update(self):
         opts = GraphOptions(**self.api_params)
@@ -249,7 +249,9 @@ class GraphOptionTests(unittest.TestCase):
         self.assertEqual(GraphOptions().get_options_map(base), base._graph_options)
 
         # something set overrides
-        other = GraphOptions(graph_name='unit_test')
+        kwargs = self.api_params.copy()  # this test concept got strange after we added default values for a couple GraphOption attrs
+        kwargs['graph_name'] = 'unit_test'
+        other = GraphOptions(**kwargs)
         options = base.get_options_map(other)
         updated = self.opt_mapping['graph_name']
         self.assertEqual(options[updated], six.b('unit_test'))
@@ -322,10 +324,10 @@ class GraphOptionTests(unittest.TestCase):
 
     def test_graph_source_convenience_attributes(self):
         opts = GraphOptions()
-        self.assertIsNone(opts.graph_source)
+        self.assertEqual(opts.graph_source, b'g')
         self.assertFalse(opts.is_analytics_source)
-        self.assertFalse(opts.is_graph_source)
-        self.assertTrue(opts.is_default_source)
+        self.assertTrue(opts.is_graph_source)
+        self.assertFalse(opts.is_default_source)
 
         opts.set_source_default()
         self.assertIsNotNone(opts.graph_source)
