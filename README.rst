@@ -20,12 +20,12 @@ Installation through pip is recommended::
 
 Documentation
 -------------
-The documentation can be found online `here <http://datastax.github.io/python-driver-dse/index.html>`_.
+The documentation can be found online `here <http://docs.datastax.com/en/latest-dse-python-driver/>`_.
 
 A couple of links for getting up to speed:
 
-* `Installation <http://datastax.github.io/python-driver-dse/installation/>`_
-* `Getting started guide <http://datastax.github.io/python-driver-dse/getting_started/>`_
+* `Installation <http://docs.datastax.com/en/developer/python-driver-dse/1.0/supplemental/installation/>`_
+* `Getting started guide <http://docs.datastax.com/en/developer/python-driver-dse/1.0/supplemental/getting_started/>`_
 
 Reporting Problems
 ------------------
