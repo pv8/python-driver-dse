@@ -1,7 +1,7 @@
 Getting Started
 ===============
 
-First, make sure you have the dse extension properly :doc:`installed <installation>`.
+First, make sure you have the DSE driver properly :doc:`installed <installation>`.
 
 Upgrading Existing Code from Core Driver
 ----------------------------------------
