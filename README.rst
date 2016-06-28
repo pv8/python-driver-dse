@@ -1,7 +1,7 @@
-DataStax Enterprise Extensions for cassandra-driver
-===================================================
+DataStax Enterprise Python Driver
+=================================
 
-This package extends the core DataStax Python Cassandra driver, adding functionality
+This package builds on the core DataStax Python Cassandra driver, adding functionality
 for interacting with certain DSE-specific features.
 
 This driver is solely for use with DataStax Enterprise. See the License section below.
