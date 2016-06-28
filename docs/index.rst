@@ -1,9 +1,10 @@
 DataStax Enterprise Python Driver
 =================================
-This package builds on the DataStax Python Driver for Apache Cassandra,
-and provides extended functionality for DataStax Enterprise (DSE).
-
-See also: `core driver documentation <http://datastax.github.io/python-driver/index.html>`_
+This is the documentation for the DataStax Enterprise Python Driver for DSE. This
+driver is built on top of the `DataStax Python driver for Apache Cassandra <http://datastax.github.io/python-driver/index.html>`_
+and enhanced for the adaptive data management and mixed workload capabilities provided by DSE. Therefore a lot of the
+underlying concepts are the same. To keep this documentation focused we will be linking to the relevant sections
+of the core where necessary.
 
 Contents
 --------

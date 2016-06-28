@@ -75,8 +75,9 @@ setup(
     include_package_data=True,
     install_requires=dependencies,
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
+        'License :: Other/Proprietary License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
@@ -88,4 +89,5 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
+    license="DataStax DSE Driver License http://www.datastax.com/terms/datastax-dse-driver-license-terms",
     cmdclass={'doc': DocCommand})

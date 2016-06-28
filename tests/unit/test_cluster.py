@@ -14,12 +14,14 @@ except ImportError:
 
 from dse import _core_driver_target_version
 from dse.cluster import Cluster
+from dse import _use_any_core_driver_version
 
 from mock import patch
 
 
 class ClusterTests(unittest.TestCase):
 
+    @unittest.skipUnless(not _use_any_core_driver_version, "Dependency validation is disabled")
     @patch('dse.cluster.core_driver_version', "0.0.1")
     def test_version_validation_invalid(self):
         """
@@ -34,6 +36,7 @@ class ClusterTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             Cluster()
 
+    @unittest.skipUnless(not _use_any_core_driver_version, "Dependency validation is disabled")
     @patch('dse.cluster.core_driver_version', _core_driver_target_version)
     def test_verion_validation_valid(self):
         """
