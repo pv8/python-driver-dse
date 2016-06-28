@@ -10,7 +10,10 @@
 import logging
 import os
 
-from cassandra import NullHandler
+
+class NullHandler(logging.Handler):
+    def emit(self, record):
+            pass
 
 logging.getLogger('dse').addHandler(NullHandler())
 
