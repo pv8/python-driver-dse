@@ -1,6 +1,22 @@
+1.0.0
+=====
+June 28, 2016
+
+Features
+--------
+* DSE Graph Client timeouts in custom payload (PYTHON-589)
+* Make DSEGSSAPIAuthProvider accept principal name (PYTHON-574)
+* Add config profiles to DSE graph execution (PYTHON-570)
+* DSE Driver version checking (PYTHON-568)
+
+Bug Fixes
+---------
+* Resolve FQDN from ip address and use that as host passed to SASLClient (PYTHON-566)
+* Geospatial type implementations don't handle 'EMPTY' values. (PYTHON-481)
+
 1.0.0a2
 =======
-Mar 30, 2016
+March 30, 2016
 
 Features
 --------
@@ -15,6 +31,6 @@ Bug Fixes
 
 1.0.0a1
 =======
-Feb 4, 2016
+February 4, 2016
 
 Initial release
