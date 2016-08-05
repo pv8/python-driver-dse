@@ -129,8 +129,8 @@ class Cluster(Cluster):
         self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT, GraphAnalyticsExecutionProfile(load_balancing_policy=lbp))
         self._config_mode = _ConfigMode.PROFILES
 
-    def _new_session(self):
-        session = Session(self, self.metadata.all_hosts())
+    def _new_session(self, keyspace):
+        session = Session(self, self.metadata.all_hosts(), keyspace)
         self._session_register_user_types(session)
         self.sessions.add(session)
         return session
@@ -154,9 +154,9 @@ class Session(Session):
         - Graph execution API
     """
 
-    def __init__(self, cluster, hosts):
+    def __init__(self, cluster, hosts, keyspace):
 
-        super(Session, self).__init__(cluster, hosts)
+        super(Session, self).__init__(cluster, hosts, keyspace)
 
         def cql_encode_str_quoted(val):
             return "'%s'" % val
