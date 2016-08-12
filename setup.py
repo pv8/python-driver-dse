@@ -61,7 +61,7 @@ class DocCommand(Command):
 # not officially supported, but included for flexibility in test environments
 open_core_version = bool(os.environ.get('DSE_DRIVER_INSTALL_OPEN_CORE_VERSION'))
 if open_core_version:
-    dependencies = ['cassandra-driver >= 3.2.0a1']
+    dependencies = ['cassandra-driver >= 3.6.0']
 else:
     dependencies = ['cassandra-driver == %s' % (_core_driver_target_version,)]
 

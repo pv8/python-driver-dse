@@ -1,3 +1,9 @@
+1.0.3
+=====
+August 5, 2016
+
+Release upgrading to cassandra-driver 3.6.0
+
 1.0.0
 =====
 June 28, 2016
