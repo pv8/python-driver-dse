@@ -6,3 +6,6 @@ sections:
     prefix: /
     type: sphinx
     directory: docs
+versions:
+  - name: v1.0
+    ref: HEAD
