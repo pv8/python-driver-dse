@@ -17,8 +17,8 @@ class NullHandler(logging.Handler):
 
 logging.getLogger('dse').addHandler(NullHandler())
 
-__version_info__ = (1, 0, 3, 'post0')
+__version_info__ = (1, 0, 4)
 __version__ = '.'.join(map(str, __version_info__))
 
-_core_driver_target_version = '3.6.0'
+_core_driver_target_version = '3.7.0'
 _use_any_core_driver_version = bool(os.environ.get('DSE_DRIVER_PERMIT_UNSUPPORTED_CORE'))
