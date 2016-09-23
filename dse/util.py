@@ -8,6 +8,7 @@
 # http://www.datastax.com/terms/datastax-dse-driver-license-terms
 
 from itertools import chain
+from geomet import wkt
 
 _nan = float('nan')
 
@@ -46,6 +47,28 @@ class Point(object):
     def __repr__(self):
         return "%s(%r, %r)" % (self.__class__.__name__, self.x, self.y)
 
+    @classmethod
+    def from_wkt(cls, s):
+        """
+        Parse a Point geometry from a wkt string and return a new Point object.
+        """
+        try:
+            geom = wkt.loads(s)
+        except ValueError:
+            raise ValueError("Invalid WKT geometry: '{0}'".format(s))
+
+        if geom['type'] != 'Point':
+            raise ValueError("Invalid WKT geometry type. Expected 'Point', got '{0}': '{1}'".format(geom['type'], s))
+
+        coords = geom['coordinates']
+        if len(coords) < 2:
+            x = y = _nan
+        else:
+            x = coords[0]
+            y = coords[1]
+
+        return Point(x=x, y=y)
+
 
 class LineString(object):
     """
@@ -78,6 +101,21 @@ class LineString(object):
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.coords)
+
+    @classmethod
+    def from_wkt(cls, s):
+        """
+        Parse a LineString geometry from a wkt string and return a new LineString object.
+        """
+        try:
+            geom = wkt.loads(s)
+        except ValueError:
+            raise ValueError("Invalid WKT geometry: '{0}'".format(s))
+
+        if geom['type'] != 'LineString':
+            raise ValueError("Invalid WKT geometry type. Expected 'LineString', got '{0}': '{1}'".format(geom['type'], s))
+
+        return LineString(coords=geom['coordinates'])
 
 
 class _LinearRing(object):
@@ -142,3 +180,22 @@ class Polygon(object):
 
     def __repr__(self):
         return "%s(%r, %r)" % (self.__class__.__name__, self.exterior.coords, [ring.coords for ring in self.interiors])
+
+    @classmethod
+    def from_wkt(cls, s):
+        """
+        Parse a Polygon geometry from a wkt string and return a new Polygon object.
+        """
+        try:
+            geom = wkt.loads(s)
+        except ValueError:
+            raise ValueError("Invalid WKT geometry: '{0}'".format(s))
+
+        if geom['type'] != 'Polygon':
+            raise ValueError("Invalid WKT geometry type. Expected 'Polygon', got '{0}': '{1}'".format(geom['type'], s))
+
+        coords = geom['coordinates']
+        exterior = coords[0] if len(coords) > 0 else tuple()
+        interiors = coords[1:] if len(coords) > 1 else None
+
+        return Polygon(exterior=exterior, interiors=interiors)
