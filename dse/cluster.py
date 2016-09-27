@@ -13,7 +13,6 @@ import six
 from gremlin_python.structure.graph import Graph
 from gremlin_python.driver.driver_remote_connection import RemoteConnection
 from gremlin_python.process.graph_traversal import GraphTraversal
-from gremlin_python.structure.io.graphson import GraphSONWriter
 
 from cassandra import ConsistencyLevel, __version__ as core_driver_version
 from cassandra.cluster import Cluster, Session, default_lbp_factory, ExecutionProfile, _ConfigMode, _NOT_SET
@@ -25,6 +24,7 @@ from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_facto
 from dse.policies import DSELoadBalancingPolicy, NeverRetryPolicy
 from dse.query import HostTargetingStatement
 from dse.util import Point, LineString, Polygon
+from dse.graphson import GraphSONWriter
 
 if six.PY3:
     long = int

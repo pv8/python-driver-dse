@@ -12,7 +12,7 @@ from cassandra.query import SimpleStatement
 import json
 import six
 
-from gremlin_python.structure.io.graphson import GraphSONReader
+from dse.graphson import GraphSONReader
 
 # (attr, description, server option)
 _graph_options = (
@@ -171,7 +171,7 @@ def graph_object_row_factory(column_names, rows):
 
 def graph_traversal_row_factory(column_names, rows):
     """
-    Returns the json decoded of a traversal graphson response.
+    Returns the decoded graphson of a traversal response.
     """
     return [GraphSONReader.readObject(row[0])['result'] for row in rows]
 
