@@ -10,6 +10,8 @@ import json
 import logging
 import six
 
+from gremlin_python.structure.graph import Graph
+from gremlin_python.driver.driver_remote_connection import RemoteConnection
 from gremlin_python.process.graph_traversal import GraphTraversal
 from gremlin_python.structure.io.graphson import GraphSONWriter
 
@@ -147,7 +149,6 @@ class GraphTraversalExecutionProfile(GraphExecutionProfile):
                                                            graph_language='bytecode-json')
 
 
-
 class Cluster(Cluster):
     """
     Cluster extending `cassandra.cluster.Cluster <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Cluster>`_.
@@ -186,6 +187,14 @@ class Cluster(Cluster):
             else:
                 import cassandra
                 raise RuntimeError("DSE driver version %s is intended for use with core driver version %s. This environment is loading version %s from %s" % (dse_driver_version, _core_driver_target_version, core_driver_version, cassandra.__file__))
+
+
+class _DSESessionRemoteGraphConnection(RemoteConnection):
+    def __init__(self):
+        super(_DSESessionRemoteGraphConnection, self).__init__(None, None)
+
+    def submit(self, bytecode):
+        raise RuntimeError("Cannot execute a GraphTraversal implicitly. Use session.execute_traversal().")
 
 
 class Session(Session):
@@ -276,6 +285,15 @@ class Session(Session):
             raise ValueError('Error while converting GraphTraversal to Graphson.')
 
         return self.execute_graph_async(query, trace=trace, execution_profile=execution_profile)
+
+    def graph_traversal(self):
+        """
+        Returns a GraphTraversalSource for building GraphTraversal.
+
+        See :attr:`dse.cluster.Cluster.execute_traversal` to execute a GraphTraversal.
+        """
+        graph = Graph()
+        return graph.traversal().withRemote(_DSESessionRemoteGraphConnection())
 
     def _transform_params(self, parameters):
         if not isinstance(parameters, dict):
