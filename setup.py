@@ -65,7 +65,7 @@ if open_core_version:
 else:
     dependencies = ['cassandra-driver == %s' % (_core_driver_target_version,)]
 
-dependencies += ['geomet>=0.1,<0.2']
+dependencies += ['geomet>=0.1,<0.2', 'gremlinpython>=3.2,<3.3']
 
 setup(
     name='cassandra-driver-dse',
