@@ -10,13 +10,16 @@ import json
 import logging
 import six
 
+from gremlin_python.process.graph_traversal import GraphTraversal
+from gremlin_python.structure.io.graphson import GraphSONWriter
+
 from cassandra import ConsistencyLevel, __version__ as core_driver_version
 from cassandra.cluster import Cluster, Session, default_lbp_factory, ExecutionProfile, _ConfigMode, _NOT_SET
 from cassandra.marshal import int64_pack
 from cassandra.query import tuple_factory
 from dse import _core_driver_target_version, _use_any_core_driver_version, __version__ as dse_driver_version
 import dse.cqltypes  # unsued here, imported to cause type registration
-from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory, _request_timeout_key
+from dse.graph import GraphOptions, SimpleGraphStatement, graph_object_row_factory, graph_traversal_row_factory, _request_timeout_key
 from dse.policies import DSELoadBalancingPolicy, NeverRetryPolicy
 from dse.query import HostTargetingStatement
 from dse.util import Point, LineString, Polygon
@@ -51,6 +54,16 @@ use Spark/analytics as the traversal source.
 Selected using ``Session.execute_graph(execution_profile=EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT)``.
 """
 
+EXEC_PROFILE_GRAPH_TRAVERSAL_DEFAULT = object()
+"""
+Key for the default graph traversal execution profile, used when no other profile is selected in
+``Session.execute_traversal(execution_profile)``.
+
+Use this as the key in `Cluster(execution_profiles) <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.Cluster>`_
+to override the default graph profile.
+"""
+
+
 class GraphExecutionProfile(ExecutionProfile):
     graph_options = None
     """
@@ -58,8 +71,8 @@ class GraphExecutionProfile(ExecutionProfile):
 
     Default options for graph queries, initialized as follows by default::
 
-        GraphOptions(graph_source=b'g',
-                     graph_language=b'gremlin-groovy')
+        GraphOptions(graph_source='g',
+                     graph_language='gremlin-groovy')
 
     See dse.graph.GraphOptions
     """
@@ -80,8 +93,8 @@ class GraphExecutionProfile(ExecutionProfile):
         retry_policy = retry_policy or NeverRetryPolicy()
         super(GraphExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
                                                     serial_consistency_level, request_timeout, row_factory)
-        self.graph_options = graph_options or GraphOptions(graph_source=b'g',
-                                                           graph_language=b'gremlin-groovy')
+        self.graph_options = graph_options or GraphOptions(graph_source='g',
+                                                           graph_language='gremlin-groovy')
 
 
 class GraphAnalyticsExecutionProfile(GraphExecutionProfile):
@@ -100,10 +113,39 @@ class GraphAnalyticsExecutionProfile(GraphExecutionProfile):
         master.
         """
         load_balancing_policy = load_balancing_policy or DSELoadBalancingPolicy(default_lbp_factory())
-        graph_options = graph_options or GraphOptions(graph_source=b'a',
-                                                      graph_language=b'gremlin-groovy')
+        graph_options = graph_options or GraphOptions(graph_source='a',
+                                                      graph_language='gremlin-groovy')
         super(GraphAnalyticsExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
                                                              serial_consistency_level, request_timeout, row_factory, graph_options)
+
+
+class GraphTraversalExecutionProfile(GraphExecutionProfile):
+    graph_options = None
+    """
+    :class:`.GraphOptions` to use with this execution
+
+    Default options for graph traversal queries, initialized as follows by default::
+
+        GraphOptions(graph_source='g',
+                     graph_language='bytecode-json')
+
+    See dse.graph.GraphOptions
+    """
+
+    def __init__(self, load_balancing_policy=None, retry_policy=None,
+                 consistency_level=ConsistencyLevel.LOCAL_ONE, serial_consistency_level=None,
+                 request_timeout=30.0, row_factory=graph_traversal_row_factory,
+                 graph_options=None):
+        """
+        Default execution profile for graph traversal execution.
+
+        See also :class:`~.GraphExecutionPolicy`.
+        """
+        super(GraphTraversalExecutionProfile, self).__init__(load_balancing_policy, retry_policy, consistency_level,
+                                                            serial_consistency_level, request_timeout, row_factory)
+        self.graph_options = graph_options or GraphOptions(graph_source='g',
+                                                           graph_language='bytecode-json')
+
 
 
 class Cluster(Cluster):
@@ -127,6 +169,7 @@ class Cluster(Cluster):
         self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_DEFAULT, GraphExecutionProfile(load_balancing_policy=lbp))
         self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_SYSTEM_DEFAULT, GraphExecutionProfile(load_balancing_policy=lbp, request_timeout=60. * 3.))
         self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_ANALYTICS_DEFAULT, GraphAnalyticsExecutionProfile(load_balancing_policy=lbp))
+        self.profile_manager.profiles.setdefault(EXEC_PROFILE_GRAPH_TRAVERSAL_DEFAULT, GraphTraversalExecutionProfile(load_balancing_policy=lbp, request_timeout=60. * 3.))
         self._config_mode = _ConfigMode.PROFILES
 
     def _new_session(self, keyspace):
@@ -208,6 +251,31 @@ class Session(Session):
         else:
             future.send_request()
         return future
+
+    def execute_traversal(self, traversal, trace=False, execution_profile=EXEC_PROFILE_GRAPH_TRAVERSAL_DEFAULT):
+        """
+        Executes a Gremlin GraphTraversal synchronously, and returns a ResultSet from this execution.
+
+        `execution_profile`: Selects an execution profile for the request.
+        """
+        return self.execute_traversal_async(traversal, trace=trace, execution_profile=execution_profile).result()
+
+    def execute_traversal_async(self, traversal, trace=False, execution_profile=EXEC_PROFILE_GRAPH_TRAVERSAL_DEFAULT):
+        """
+        Execute a Gremlin GraphTraversal and return a `ResponseFuture <http://datastax.github.io/python-driver/api/cassandra/cluster.html#cassandra.cluster.ResponseFuture.result>`_
+        object which callbacks may be attached to for asynchronous response delivery. You may also call ``ResponseFuture.result()`` to synchronously block for
+        results at any time.
+        """
+
+        if not isinstance(traversal, GraphTraversal):
+            raise TypeError('traversal must be an instance of GraphTraversal.')
+
+        try:
+            query = GraphSONWriter.writeObject(traversal)
+        except Exception:
+            raise ValueError('Error while converting GraphTraversal to Graphson.')
+
+        return self.execute_graph_async(query, trace=trace, execution_profile=execution_profile)
 
     def _transform_params(self, parameters):
         if not isinstance(parameters, dict):

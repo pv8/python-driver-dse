@@ -12,6 +12,8 @@ from cassandra.query import SimpleStatement
 import json
 import six
 
+from gremlin_python.structure.io.graphson import GraphSONReader
+
 # (attr, description, server option)
 _graph_options = (
     ('graph_name', 'name of the targeted graph.', 'graph-name'),
@@ -82,23 +84,36 @@ class GraphOptions(object):
         """
         self.graph_source = 'g'
 
+    def set_graph_traversal(self):
+        """
+        Sets ``graph_language`` to the server-defined GraphSON language ('bytecode-json')
+        """
+        self.graph_language = 'bytecode-json'
+
     @property
     def is_default_source(self):
-        return self.graph_source in (b'default', None)
+        return self.graph_source in ('default', None)
 
     @property
     def is_analytics_source(self):
         """
         True if ``graph_source`` is set to the server-defined analytics traversal source ('a')
         """
-        return self.graph_source == b'a'
+        return self.graph_source == 'a'
 
     @property
     def is_graph_source(self):
         """
         True if ``graph_source`` is set to the server-defined graph traversal source ('g')
         """
-        return self.graph_source == b'g'
+        return self.graph_source == 'g'
+
+    @property
+    def is_graph_traversal(self):
+        """
+        True if ``graph_language`` is set to the server-defined GraphSON language ('bytecode-json')
+        """
+        return self.graph_language == 'bytecode-json'
 
 
 for opt in _graph_options:
@@ -152,6 +167,13 @@ def graph_object_row_factory(column_names, rows):
     still returned as :class:`dse.graph.Result`.
     """
     return _graph_object_sequence(json.loads(row[0])['result'] for row in rows)
+
+
+def graph_traversal_row_factory(column_names, rows):
+    """
+    Returns the json decoded of a traversal graphson response.
+    """
+    return [GraphSONReader.readObject(row[0])['result'] for row in rows]
 
 
 def _graph_object_sequence(objects):
