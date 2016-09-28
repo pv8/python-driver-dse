@@ -24,8 +24,8 @@ The documentation can be found online `here <http://docs.datastax.com/en/latest-
 
 A couple of links for getting up to speed:
 
-* `Installation <http://docs.datastax.com/en/developer/python-driver-dse/1.0/supplemental/installation/>`_
-* `Getting started guide <http://docs.datastax.com/en/developer/python-driver-dse/1.0/supplemental/getting_started/>`_
+* `Installation <http://docs.datastax.com/en/developer/python-driver-dse/v1.0/installation/>`_
+* `Getting started guide <http://docs.datastax.com/en/developer/python-driver-dse/v1.0/getting_started/>`_
 
 Reporting Problems
 ------------------
